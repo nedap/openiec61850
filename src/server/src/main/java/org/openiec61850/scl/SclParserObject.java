@@ -2,7 +2,7 @@
  * Copyright Fraunhofer ISE, energy & meteo Systems GmbH, and other contributors 2011
  *
  * This file is part of openIEC61850.
- * For more information visit http://www.openmuc.org 
+ * For more information visit http://www.openmuc.org
  *
  * openIEC61850 is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -817,7 +817,7 @@ class SclParserObject {
 		DoType doType = typeDefinitions.getDOType(doTypeID);
 
 		if (doType == null) {
-			throw new SclParseException("DO type " + doType + " not defined!");
+			throw new SclParseException("DO type " + doTypeID + " not defined!");
 		}
 
 		String ref = parentRef + '.' + name;

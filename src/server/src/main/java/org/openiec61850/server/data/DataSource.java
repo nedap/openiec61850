@@ -2,7 +2,7 @@
  * Copyright Fraunhofer ISE, energy & meteo Systems GmbH, and other contributors 2011
  *
  * This file is part of openIEC61850.
- * For more information visit http://www.openmuc.org 
+ * For more information visit http://www.openmuc.org
  *
  * openIEC61850 is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -26,6 +26,8 @@ import java.util.Set;
 import org.openiec61850.AccessPoint;
 import org.openiec61850.BasicDataAttribute;
 import org.openiec61850.ServiceError;
+import org.openiec61850.ConnectionHandler;
+import org.openiec61850.jmms.iso.acse.AcseAssociation;
 
 /**
  * The IEC server AccessPoint reads and writes data from and to so called
@@ -34,7 +36,7 @@ import org.openiec61850.ServiceError;
  * be an implementation of this interface. These implementations are not part of
  * the openIEC61850 stack but of the concrete applications that make use of the
  * stack.
- * 
+ *
  * @author bertram
  * @author Stefan Feuerhahn
  */
@@ -44,15 +46,15 @@ public interface DataSource extends Runnable {
 	 * Inserts the proper values in the given BasicDataAttributes using
 	 * setValue(). This function is called by the openIEC61850 server library
 	 * whenever a GetDataValues or GetDataSetValues service request comes in.
-	 * 
+	 *
 	 */
-	public void readValues(List<BasicDataAttribute> basicDataAttributes) throws ServiceError;
+	public void readValues(List<BasicDataAttribute> basicDataAttributes, AcseAssociation association) throws ServiceError;
 
 	/**
 	 * Takes the values from the given list of BasicDataAttributes.
-	 * 
+	 *
 	 */
-	public void writeValues(List<BasicDataAttribute> basicDataAttributes) throws ServiceError;
+	public void writeValues(List<BasicDataAttribute> basicDataAttributes, AcseAssociation association) throws ServiceError;
 
 	/**
 	 * Initiates the DataSource with a reference back to the Access point and

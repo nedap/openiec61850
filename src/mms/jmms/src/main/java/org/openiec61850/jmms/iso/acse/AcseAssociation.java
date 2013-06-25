@@ -2,7 +2,7 @@
  * Copyright Fraunhofer ISE, energy & meteo Systems GmbH, and other contributors 2011
  *
  * This file is part of jMMS.
- * For more information visit http://www.openmuc.org 
+ * For more information visit http://www.openmuc.org
  *
  * jMMS is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -57,11 +57,12 @@ import org.openmuc.jositransport.ClientTSAP;
 import org.openmuc.jositransport.TConnection;
 
 /**
- * 
+ *
  * @author Stefan Feuerhahn
- * 
+ *
  */
 public class AcseAssociation {
+
 
 	boolean connected = false;
 	TConnection tConnection;
@@ -99,6 +100,7 @@ public class AcseAssociation {
 
 	private static final BerObjectIdentifier default_mechanism_name = new BerObjectIdentifier(new byte[] { 0x03, 0x52,
 			0x03, 0x01 });
+    private ACSE_apdu acseApdu;
 
 	protected AcseAssociation(TConnection tConnection, byte[] pSelLocal) {
 		this.tConnection = tConnection;
@@ -354,7 +356,7 @@ public class AcseAssociation {
 	/**
 	 * Starts a session layer connection, sends a CONNECT (CN), waits for a
 	 * ACCEPT (AC) and throws an IOException if not successful
-	 * 
+	 *
 	 * @throws IOException
 	 */
 	private ByteBuffer startSConnection(List<byte[]> ssduList, List<Integer> ssduOffsets, List<Integer> ssduLengths,
@@ -740,17 +742,17 @@ public class AcseAssociation {
 
 		}
 
-		return AcseAssociation.decodePConRequest(ssdu, idx);
+		return decodePConRequest(ssdu, idx);
 
 	}
 
-	private static ByteBuffer decodePConRequest(byte[] ppdu, int offset) throws IOException {
+	private ByteBuffer decodePConRequest(byte[] ppdu, int offset) throws IOException {
 
 		CP_type cpType = new CP_type();
 		ByteArrayInputStream iStream = new ByteArrayInputStream(ppdu, offset, ppdu.length - offset);
 		cpType.decode(iStream, true);
 
-		ACSE_apdu acseApdu = new ACSE_apdu();
+		acseApdu = new ACSE_apdu();
 		acseApdu.decode(iStream, null);
 
 		return ByteBuffer.wrap(ppdu, ppdu.length - iStream.available(), iStream.available());
@@ -760,4 +762,8 @@ public class AcseAssociation {
 	public int getMessageTimeout() {
 		return tConnection.getMessageTimeout();
 	}
+
+    public String getAuthenticationValue() {
+        return new String(acseApdu.aarq.calling_authentication_value.charstring.octetString);
+    }
 }

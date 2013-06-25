@@ -4,7 +4,7 @@ package org.openiec61850.sample;
  * Copyright Fraunhofer ISE, energy & meteo Systems GmbH, and other contributors 2011
  *
  * This file is part of openIEC61850.
- * For more information visit http://www.openmuc.org 
+ * For more information visit http://www.openmuc.org
  *
  * openIEC61850 is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -32,21 +32,22 @@ import org.openiec61850.ModelNode;
 import org.openiec61850.ObjectReference;
 import org.openiec61850.ServiceError;
 import org.openiec61850.server.data.DataSource;
+import org.openiec61850.ConnectionHandler;
+import org.openiec61850.jmms.iso.acse.AcseAssociation;
 
 /**
  * This {@link DummyDataSource} stores written values in a simple HashMap and
  * returns them when they are read. Default values are returned for
  * BasicDataAttributes that have never been written.
- * 
+ *
  */
 public class DummyDataSource implements DataSource {
 
 	protected Map<ObjectReference, Object> valueStore = new LinkedHashMap<ObjectReference, Object>();
 
-	public void init(AccessPoint ac, Set<ModelNode> triggerDchg, Set<ModelNode> triggerQchg, Set<ModelNode> triggerDupd) {
-	}
-
-	public void readValues(List<BasicDataAttribute> basicDataAttributes) throws ServiceError {
+    @Override
+	public void readValues(List<BasicDataAttribute> basicDataAttributes, AcseAssociation association) throws ServiceError {
+        System.out.println(association.getAuthenticationValue());
 		for (BasicDataAttribute basicDataAttribute : basicDataAttributes) {
 			Object value = valueStore.get(basicDataAttribute.getReference());
 			if (value != null) {
@@ -60,7 +61,8 @@ public class DummyDataSource implements DataSource {
 		}
 	}
 
-	public void writeValues(List<BasicDataAttribute> basicDataAttributes) throws ServiceError {
+    @Override
+	public void writeValues(List<BasicDataAttribute> basicDataAttributes, AcseAssociation association) throws ServiceError {
 		for (BasicDataAttribute bda : basicDataAttributes) {
 			valueStore.put(bda.getReference(), bda.getValue());
 		}
@@ -70,6 +72,7 @@ public class DummyDataSource implements DataSource {
 
 	}
 
+    @Override
 	public void initialize(AccessPoint ac, Set<String> triggerDchg, Set<String> triggerQchg, Set<String> triggerDupd) {
 	}
 }

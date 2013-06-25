@@ -2,7 +2,7 @@
  * Copyright Fraunhofer ISE, energy & meteo Systems GmbH, and other contributors 2011
  *
  * This file is part of openIEC61850.
- * For more information visit http://www.openmuc.org 
+ * For more information visit http://www.openmuc.org
  *
  * openIEC61850 is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -81,9 +81,9 @@ import org.slf4j.LoggerFactory;
 /**
  * Implements the SCSMConnectionHandler. One MMSConnectionHandler is created for
  * every new Association Request.
- * 
+ *
  */
-final class ConnectionHandler {
+public final class ConnectionHandler {
 
 	private static final int DEFAULT_PROPOSED_MAX_SERV_OUTSTANDING_CALLING = 5;
 	private static final int DEFAULT_PROPOSED_MAX_SERV_OUTSTANDING_CALLED = 5;
@@ -126,9 +126,13 @@ final class ConnectionHandler {
 
 	}
 
+    public AcseAssociation getAssociation() {
+        return pConnection;
+    }
+
 	/**
 	 * Set the maximum MMS Pdu size in bytes. The default size is 65000.
-	 * 
+	 *
 	 * @param maxPduSize
 	 *            should be at least 1000
 	 */
@@ -146,8 +150,6 @@ final class ConnectionHandler {
 
 	public void connectionIndication(AcseAssociation acseAssociation, ByteBuffer associationRequest)
 			throws ServiceError, IOException {
-
-		logger.debug("someone connected");
 
 		this.pConnection = acseAssociation;
 
@@ -202,7 +204,6 @@ final class ConnectionHandler {
 	}
 
 	private boolean processAssociationRequest(InitiateRequestPdu associationRequestMMSpdu) {
-
 		if (associationRequestMMSpdu.localDetailCalling != null) {
 			negotiatedMaxPduSize = (int) associationRequestMMSpdu.localDetailCalling.val;
 		}
@@ -674,7 +675,7 @@ final class ConnectionHandler {
 	 * GetVariableAccessAttributes (GetDataDefinition/GetDataDirectory) can be
 	 * called with different kinds of references. Examples: 1. DGEN1 2. DGEN1$CF
 	 * 3. DGEN1$CF$GnBlk
-	 * 
+	 *
 	 */
 	private GetVariableAccessAttributesResponse handleGetVariableAccessAttributesRequest(
 			GetVariableAccessAttributesRequest getVariableAccessAttributesRequest) throws ServiceError {
@@ -994,7 +995,7 @@ final class ConnectionHandler {
 			modelNode = modelNode.copy();
 
 			List<BasicDataAttribute> basicDataAttributes = modelNode.getBasicDataAttributes();
-			accessPoint.dataSource.readValues(basicDataAttributes);
+			accessPoint.dataSource.readValues(basicDataAttributes, pConnection);
 
 			// }
 			AccessResult accessRes = null;
@@ -1038,7 +1039,7 @@ final class ConnectionHandler {
 
 			DataSet dataSetCopy = accessPoint.serverModel.getDataSet(dataSetReference).copy();
 
-			accessPoint.dataSource.readValues(dataSetCopy.getBasicDataAttributes());
+			accessPoint.dataSource.readValues(dataSetCopy.getBasicDataAttributes(), pConnection);
 
 			for (FcModelNode dsMember : dataSetCopy) {
 				Data result = dsMember.getMmsDataObj();
@@ -1139,7 +1140,7 @@ final class ConnectionHandler {
 
 					List<BasicDataAttribute> basicDataAttributes = modelNode.getBasicDataAttributes();
 
-					accessPoint.dataSource.writeValues(basicDataAttributes);
+					accessPoint.dataSource.writeValues(basicDataAttributes, pConnection);
 
 					result = new WriteResponse.SubChoice(null, new BerNull());
 				} catch (ServiceError e) {
@@ -1164,7 +1165,7 @@ final class ConnectionHandler {
 				dataSetMember.setValueFromMmsDataObj(dataIterator.next());
 			}
 
-			accessPoint.dataSource.writeValues(dataSetCopy.getBasicDataAttributes());
+			accessPoint.dataSource.writeValues(dataSetCopy.getBasicDataAttributes(), pConnection);
 
 			// TODO handle errors
 			// for (ServiceError e : results) {

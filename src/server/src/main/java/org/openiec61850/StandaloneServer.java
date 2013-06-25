@@ -2,7 +2,7 @@
  * Copyright Fraunhofer ISE, energy & meteo Systems GmbH, and other contributors 2011
  *
  * This file is part of openIEC61850.
- * For more information visit http://www.openmuc.org 
+ * For more information visit http://www.openmuc.org
  *
  * openIEC61850 is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -65,7 +65,8 @@ public class StandaloneServer implements ServerStopListener {
 		try {
 			propertiesParser.parse(propFilePath);
 		} catch (Exception e) {
-			System.err.println("Error parsing properties file: " + e.getMessage());
+            logger.error("Error parsing properties file: " + e.getMessage(), e);
+			//System.err.println("Error parsing properties file: " + e.getMessage());
 			return;
 		}
 
@@ -75,7 +76,7 @@ public class StandaloneServer implements ServerStopListener {
 		try {
 			accessPoints = SclParser.parse(propertiesParser.getSclFilePath());
 		} catch (SclParseException e) {
-			System.err.println("Error parsing ICD file: " + e.getMessage());
+            logger.error("Error parsing ICD file: " + e.getMessage(), e);
 			return;
 		}
 
@@ -99,7 +100,7 @@ public class StandaloneServer implements ServerStopListener {
 		}
 
 		if (initializedAccessPoints.size() == 0) {
-			System.err.println("No AccessPoint could be connected to a DataSource. Will exit.");
+			logger.error("No AccessPoint could be connected to a DataSource. Will exit.");
 			return;
 		}
 

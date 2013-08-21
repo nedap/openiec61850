@@ -2,7 +2,7 @@
  * Copyright Fraunhofer ISE, energy & meteo Systems GmbH, and other contributors 2011
  *
  * This file is part of openIEC61850.
- * For more information visit http://www.openmuc.org 
+ * For more information visit http://www.openmuc.org
  *
  * openIEC61850 is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -26,7 +26,7 @@ import java.util.List;
 
 /**
  * ObjectReference syntax: LDName/LNName.DOName[.Name[. ...]]
- * 
+ *
  */
 public final class ObjectReference implements Iterable<String> {
 
@@ -58,6 +58,10 @@ public final class ObjectReference implements Iterable<String> {
 	public String toString() {
 		return objectReference;
 	}
+
+    public String getFullReference(){
+        return objectReference;
+    }
 
 	public boolean isLogicalDeviceRef() {
 		if (nodeNames == null) {

@@ -111,6 +111,8 @@ public class StandaloneServer implements ServerStopListener {
 			boolean foundAccessPointForSAP = false;
 			for (AccessPoint accessPoint : initializedAccessPoints) {
 				if (accessPoint.getName().equals(propertiesParser.getAPName(sapPropName))) {
+
+                    //TODO: modify this so we can inject our own ServerSocketFactory (with SSL!) here
 					serverSAP.init(accessPoint, this, propertiesParser.properties, sapPropName);
 					foundAccessPointForSAP = true;
 				}

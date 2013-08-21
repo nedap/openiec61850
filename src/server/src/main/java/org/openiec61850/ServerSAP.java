@@ -2,7 +2,7 @@
  * Copyright Fraunhofer ISE, energy & meteo Systems GmbH, and other contributors 2011
  *
  * This file is part of openIEC61850.
- * For more information visit http://www.openmuc.org 
+ * For more information visit http://www.openmuc.org
  *
  * openIEC61850 is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -48,7 +48,7 @@ public class ServerSAP implements AcseAssociationListener {
 	/**
 	 * Create an MMSServerSAP with a ServerSocketFactory. The
 	 * ServerSocketFactory could be used to create SSLServerSockets.
-	 * 
+	 *
 	 * @param port
 	 *            local port
 	 * @param backlog
@@ -72,7 +72,7 @@ public class ServerSAP implements AcseAssociationListener {
 
 	/**
 	 * Create a simple MMSServerSAP.
-	 * 
+	 *
 	 * @param port
 	 *            local port
 	 * @param backlog
@@ -87,7 +87,12 @@ public class ServerSAP implements AcseAssociationListener {
 		this(port, backlog, bindAddr, accessPoint, ServerSocketFactory.getDefault(), sapStopListener);
 	}
 
-	public void init(AccessPoint accessPoint, ServerStopListener sapStopListener, Properties properties, String sapPropName)
+    public void init(AccessPoint accessPoint, ServerStopListener sapStopListener, Properties properties, String sapPropName)
+            throws ConfigurationException {
+        init(accessPoint, sapStopListener, properties, sapPropName, ServerSocketFactory.getDefault());
+    }
+
+	public void init(AccessPoint accessPoint, ServerStopListener sapStopListener, Properties properties, String sapPropName, ServerSocketFactory socketFactory)
 			throws ConfigurationException {
 		this.accessPoint = accessPoint;
 		this.sapStopListener = sapStopListener;
@@ -119,14 +124,14 @@ public class ServerSAP implements AcseAssociationListener {
 		logger.info("Initializing MMS Server SAP: bindAddress={}, port={}, backlog={}", new Object[] { bindAddr, port,
 				backlog });
 
-		acseSAP = new ServerAcseSAP(port, backlog, inetAddress, this, ServerSocketFactory.getDefault());
+		acseSAP = new ServerAcseSAP(port, backlog, inetAddress, this, socketFactory);
 
 	}
 
 	/**
 	 * Set the maxTPDUSize. The default maxTPDUSize is 65531 (see RFC 1006).
 	 * Only use this function if you want to change this.
-	 * 
+	 *
 	 * @param maxTPDUSizeParam
 	 *            The maximum length is equal to 2^(maxTPDUSizeParam) octets.
 	 *            Note that the actual TSDU size that can be transfered is equal
@@ -141,7 +146,7 @@ public class ServerSAP implements AcseAssociationListener {
 	/**
 	 * Set the maximum number of connections that are allowed in parallel by the
 	 * Server SAP.
-	 * 
+	 *
 	 * @param maxConnections
 	 *            the number of connections allowed (default is 100)
 	 */
@@ -152,7 +157,7 @@ public class ServerSAP implements AcseAssociationListener {
 	/**
 	 * Set the TConnection timeout for waiting for the first byte of a new
 	 * message. Default is 0 (unlimited)
-	 * 
+	 *
 	 * @param messageTimeout
 	 *            in milliseconds
 	 * @throws SocketException
@@ -164,7 +169,7 @@ public class ServerSAP implements AcseAssociationListener {
 	/**
 	 * Set the TConnection timeout for receiving data once the beginning of a
 	 * message has been received. Default is 2000 (2seconds)
-	 * 
+	 *
 	 * @param messageFragmentTimeout
 	 *            in milliseconds
 	 * @throws SocketException

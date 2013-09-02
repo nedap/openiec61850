@@ -87,12 +87,7 @@ public class ServerSAP implements AcseAssociationListener {
 		this(port, backlog, bindAddr, accessPoint, ServerSocketFactory.getDefault(), sapStopListener);
 	}
 
-    public void init(AccessPoint accessPoint, ServerStopListener sapStopListener, Properties properties, String sapPropName)
-            throws ConfigurationException {
-        init(accessPoint, sapStopListener, properties, sapPropName, ServerSocketFactory.getDefault());
-    }
-
-	public void init(AccessPoint accessPoint, ServerStopListener sapStopListener, Properties properties, String sapPropName, ServerSocketFactory socketFactory)
+	public void init(AccessPoint accessPoint, ServerStopListener sapStopListener, Properties properties, String sapPropName)
 			throws ConfigurationException {
 		this.accessPoint = accessPoint;
 		this.sapStopListener = sapStopListener;
@@ -110,6 +105,14 @@ public class ServerSAP implements AcseAssociationListener {
 		}
 
 		String bindAddr = properties.getProperty("openIEC61850.serverSAP." + sapPropName + ".bindAddr");
+
+        String useTLS = properties.getProperty("openIEC61850.serverSAP." + sapPropName + ".tls");
+        ServerSocketFactory serverSocketFactory = null;
+        if(useTLS != null && useTLS.trim().equalsIgnoreCase("true")) {
+            serverSocketFactory = ServerSocketFactory.getDefault();//TODO: implement TLS factory here
+        } else {
+            serverSocketFactory = ServerSocketFactory.getDefault();
+        }
 		InetAddress inetAddress;
 		if (bindAddr == null) {
 			bindAddr = "0.0.0.0";
@@ -124,7 +127,7 @@ public class ServerSAP implements AcseAssociationListener {
 		logger.info("Initializing MMS Server SAP: bindAddress={}, port={}, backlog={}", new Object[] { bindAddr, port,
 				backlog });
 
-		acseSAP = new ServerAcseSAP(port, backlog, inetAddress, this, socketFactory);
+		acseSAP = new ServerAcseSAP(port, backlog, inetAddress, this, serverSocketFactory);
 
 	}
 

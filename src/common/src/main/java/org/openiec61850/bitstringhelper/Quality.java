@@ -53,18 +53,20 @@ public class Quality {
      * @return
      */
     public Validity getValidity() {
-        int v = bitString[0] & 0xC0;
-        switch(v) {
-            case 0x00:
-                return Validity.GOOD;
-            case 0x40:
-                return Validity.INVALID;
-            case 0x80:
+        boolean bit0 = getBit(0);
+        boolean bit1 = getBit(1);
+        if(bit0) {
+            if(bit1) {
                 return Validity.QUESTIONABLE;
-            case 0xC0:
+            } else {
                 return Validity.RESERVED;
-            default:
-                throw new IllegalStateException("invalid validity bit string");
+            }
+        } else {
+            if(bit1) {
+                return Validity.INVALID;
+            } else {
+                return Validity.GOOD;
+            }
         }
     }
 
@@ -72,8 +74,8 @@ public class Quality {
      * Validity is first two bits:
      * 0 0 GOOD
      * 0 1 INVALID
-     * 1 0 QUESTIONABLE
-     * 1 1 RESERVED
+     * 1 1 QUESTIONABLE
+     * 1 0 RESERVED
      * @return
      */
     public void setValidity(Validity validity) {
@@ -81,15 +83,20 @@ public class Quality {
             case GOOD:
                 setBit(0, false);
                 setBit(1, false);
+                break;
             case INVALID:
                 setBit(0, false);
                 setBit(1, true);
-            case QUESTIONABLE:
-                setBit(0, true);
-                setBit(1, false);
+                break;
             case RESERVED:
                 setBit(0, true);
+                setBit(1, false);
+                break;
+            case QUESTIONABLE:
+                setBit(0, true);
                 setBit(1, true);
+                break;
+
         }
     }
 
@@ -134,13 +141,13 @@ public class Quality {
     }
 
     public void setBit(int pos, boolean value) {
-      int posByte = pos/8;
-      int posBit = pos%8;
-      byte oldByte = bitString[posByte];
-      oldByte = (byte) (((0xFF7F>>posBit) & oldByte) & 0x00FF);
-      int val = value ? 1 : 0;
-      byte newByte = (byte) ((val<<(8-(posBit+1))) | oldByte);
-      bitString[posByte] = newByte;
+      int byteIndex = pos / 8;
+      int bitIndex = 7 - (pos % 8);
+
+      byte mask = (byte) (1 << bitIndex);
+      byte valueBit = value ? mask : 0;
+
+      bitString[byteIndex] = (byte) ((bitString[byteIndex] & ~mask) | valueBit);
    }
 
     private  boolean getBit( int pos) {

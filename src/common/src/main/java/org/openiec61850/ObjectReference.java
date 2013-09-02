@@ -54,6 +54,18 @@ public final class ObjectReference implements Iterable<String> {
 		return nodeNames.get(nodeNames.size() - 1);
 	}
 
+    public String getLNName() {
+        return get(1);
+    }
+
+    public String getDOName() {
+        return get(2);
+    }
+
+    public String getDAName() {
+        return get(3);
+    }
+
 	@Override
 	public String toString() {
 		return objectReference;

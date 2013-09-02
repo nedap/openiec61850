@@ -127,7 +127,7 @@ public final class AccessPoint {
                 instance = c.newInstance();
             }
 		} catch (Exception e) {
-			throw new ConfigurationException("Exception instantiating DataSource: " + dataSourceClassName + e);
+			throw new ConfigurationException("Exception instantiating DataSource: " + dataSourceClassName, e);
 		}
 		if (!(instance instanceof DataSource)) {
 			throw new ConfigurationException(instance.getClass().getName() + " does not implement the "

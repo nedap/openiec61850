@@ -1,5 +1,6 @@
 package org.openiec61850;
 
+import org.openiec61850.bitstringhelper.Quality;
 import org.openiec61850.jmms.mms.asn1.Data;
 import org.openiec61850.jmms.mms.asn1.TypeSpecification;
 import org.openmuc.jasn1.ber.types.BerBitString;
@@ -88,7 +89,12 @@ public final class DaBitString extends BasicDataAttribute {
 
 	@Override
 	public String toString() {
-		return getReference().toString() + ": " + value;
+        if(this.bitStringType == BitStringType.QUALITY && value != null) {
+            Quality q = new Quality(value);
+            return getReference().toString() + ":" + q.toString();
+        } else {
+            return getReference().toString() + ": " + value;
+        }
 	}
 
 }

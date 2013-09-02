@@ -84,16 +84,15 @@ public class StandaloneServer implements ServerStopListener {
 		for (AccessPoint accessPoint : accessPoints) {
 			String dataSourceClassName = propertiesParser.getDataSourceClassName(accessPoint.getName());
 			if (dataSourceClassName == null) {
-				System.err.println("No DataSource has been configured for the AccessPoint \"" + accessPoint.getName()
+				logger.error("No DataSource has been configured for the AccessPoint \"" + accessPoint.getName()
 						+ "\" in the properties file.");
 			}
 			else {
 				try {
-					accessPoint.initDataSource(propertiesParser.getDataSourceClassName(accessPoint.getName()));
+					accessPoint.initDataSource(propertiesParser.getDataSourceClassName(accessPoint.getName()), propertiesParser);
 					initializedAccessPoints.add(accessPoint);
 				} catch (ConfigurationException e) {
-					System.out.println("Error initializing DataSource: " + e.getMessage());
-					e.printStackTrace();
+					logger.error("Error initializing DataSource: ", e);
 					return;
 				}
 			}
@@ -113,6 +112,7 @@ public class StandaloneServer implements ServerStopListener {
 				if (accessPoint.getName().equals(propertiesParser.getAPName(sapPropName))) {
 
                     //TODO: modify this so we can inject our own ServerSocketFactory (with SSL!) here
+                    //then implement a way to verify connections bases on certificate and AARQ and AARE
 					serverSAP.init(accessPoint, this, propertiesParser.properties, sapPropName);
 					foundAccessPointForSAP = true;
 				}

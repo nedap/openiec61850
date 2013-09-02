@@ -2,7 +2,7 @@
  * Copyright Fraunhofer ISE, energy & meteo Systems GmbH, and other contributors 2011
  *
  * This file is part of openIEC61850.
- * For more information visit http://www.openmuc.org 
+ * For more information visit http://www.openmuc.org
  *
  * openIEC61850 is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
@@ -21,6 +21,7 @@
 package org.openiec61850;
 
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,6 +37,7 @@ import org.openiec61850.common.model.report.ReportEntryData.ReasonCode;
 import org.openiec61850.common.model.report.UnbufferedReportContrlBlock;
 import org.openiec61850.server.data.ConfigurationException;
 import org.openiec61850.server.data.DataSource;
+import org.openiec61850.server.data.PropertiesParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -114,10 +116,16 @@ public final class AccessPoint {
 	//
 	// }
 
-	public void initDataSource(String dataSourceClassName) throws ConfigurationException {
+	public void initDataSource(String dataSourceClassName, PropertiesParser properties) throws ConfigurationException {
 		Object instance = null;
 		try {
-			instance = Class.forName(dataSourceClassName).newInstance();
+            Class c = Class.forName(dataSourceClassName);
+            try{
+                Constructor constructor = c.getConstructor(PropertiesParser.class);
+                instance = constructor.newInstance(properties);
+            } catch (Exception e) {
+                instance = c.newInstance();
+            }
 		} catch (Exception e) {
 			throw new ConfigurationException("Exception instantiating DataSource: " + dataSourceClassName + e);
 		}
@@ -549,7 +557,7 @@ public final class AccessPoint {
 	 * This method should be called when reports/logs point to a new data set so
 	 * that the members to be monitored are updated TODO implement the update
 	 * for logs
-	 * 
+	 *
 	 */
 
 	// TODO commented out:
@@ -690,6 +698,5 @@ public final class AccessPoint {
 
 	void addNonPersistentDataSet(DataSet dataSet, ConnectionHandler connectionHandler) {
 		// TODO Auto-generated method stub
-
 	}
 }

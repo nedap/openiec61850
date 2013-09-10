@@ -685,7 +685,7 @@ final class SclParser {
 		DoType doType = typeDefinitions.getDOType(doTypeID);
 
 		if (doType == null) {
-			throw new SclParseException("DO type " + doType + " not defined!");
+			throw new SclParseException("DO type " + doTypeID + " not defined!");
 		}
 
 		String ref = parentRef + '.' + name;

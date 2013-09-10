@@ -124,6 +124,7 @@ public final class AccessPoint {
                 Constructor constructor = c.getConstructor(PropertiesParser.class);
                 instance = constructor.newInstance(properties);
             } catch (Exception e) {
+                logger.warn("could not construct Datasource {} with properties parser, trying without arguments", dataSourceClassName, e);
                 instance = c.newInstance();
             }
 		} catch (Exception e) {

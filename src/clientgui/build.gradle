@@ -1,0 +1,12 @@
+
+dependencies {
+  compile project(':openiec61850')
+  compile group: 'com.toedter', name: 'jcalendar', version: '1.3.2'
+}
+
+jar {
+  manifest {
+    name = "Client GUI"
+    instruction 'Export-Package', '!*.internal.*,*'
+  }
+}

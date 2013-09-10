@@ -10,3 +10,6 @@ src/sample/build
 src/common/build
 src/mms/jmms/build
 src/mms/jositransport/build
+/src/clientgui/build/
+/src/jositransport/build/
+/src/openiec61850/build/

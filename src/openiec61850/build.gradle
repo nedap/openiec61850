@@ -1,0 +1,14 @@
+
+dependencies {
+  compile project(':jositransport')
+  compile group: 'org.slf4j', name: 'slf4j-api', version: '1.7.2'
+  compile files('dependencies/jasn1-ber-1.1.4.jar')
+  compile group: 'ch.qos.logback', name: 'logback-classic', version: '1.0.9'
+}
+
+jar {
+  manifest {
+    name = "OpenIEC61850"
+    instruction 'Export-Package', '!*.internal.*,*'
+  }
+}

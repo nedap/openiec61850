@@ -1,8 +1,38 @@
-0.14.4 Okt-30-2012
+0.16.0 Sep-3-2013
+-----------------
+- renamed many functions and classes
+- added Client GUI project to easily browse the device model of an IEC
+  61850 IED.
+- openiec61850-client, -server, -common and jmms where combined into a
+  single openiec61850 library. The split was of no real use and caused
+  split package problems in OSGi environments.
+- client ACSI functions now throw two types of exceptions: IOException
+  (fatal exception, client needs to reconnect to server) and
+  ServiceError for Errors that did not affect the active
+  assocition/connection.
+- The way the server library works was completely changed: DataSources
+  no longer exist and there is no need for property files anymore. The
+  readValue() callback method in the DataSource is no longer needed
+  because GetDataValues requests are handled by the server library
+  without consulting the server application. Instead the server
+  application now has to fill the internal model of the server library
+  with up to date values. This change was necessary in order to be
+  able to efficiently implement reporting and controling services in
+  the future.
+- Basic control services are now part of the library and no longer
+  have to be handled by the server application.
+- Several bug fixes in the SCL-parser
+- fix so that FunctionalConstraints such as GS that are not supported
+  by openIEC61850 yet do not cause a null pointer exception when they
+  are part of a DataSet
+
+0.14.4 Oct-30-2012
 ------------------
 - fixed another bug when decoding Float64 
-- getDataDefinition of all kinds of DataObjects and DataAttributes now possible
-- modified toString() function of most DataAttributes to print more valuable information
+- getDataDefinition of all kinds of DataObjects and DataAttributes now
+  possible
+- modified toString() function of most DataAttributes to print more
+  valuable information
 
 0.14.3 Sep-18-2012
 ------------------

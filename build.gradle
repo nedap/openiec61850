@@ -1,23 +1,20 @@
 
 configure(allprojects) {
   apply plugin: 'java'
-  version = '0.14.4'
+  version = '0.16.0'
+  group = 'org.openmuc.openiec61850'
 }
 
 project.ext {
   distributionProjects = subprojects.findAll {
-    it.getPath() == ':openiec61850-common' ||
-    it.getPath() == ':openiec61850-client' ||
-    it.getPath() == ':openiec61850-server' ||
+    it.getPath() == ':openiec61850' ||
     it.getPath() == ':openiec61850-sample' ||
-    it.getPath() == ':jmms' ||
+    it.getPath() == ':openiec61850-clientgui' ||
     it.getPath() == ':jositransport'
   }
-  
+
   docProjects = distributionProjects.findAll {
-    it.getPath() == ':openiec61850-common' ||
-    it.getPath() == ':openiec61850-client' ||
-    it.getPath() == ':openiec61850-server'
+    it.getPath() == ':openiec61850'
   }
 }
 
@@ -27,11 +24,33 @@ configure(subprojects) {
   apply plugin: 'osgi'
   apply plugin: 'maven'
 
-  sourceCompatibility = 1.5
-  targetCompatibility = 1.5
+  sourceCompatibility = 1.6
+  targetCompatibility = 1.6
 
   repositories { mavenCentral()  }
 
+  uploadArchives {
+    repositories {
+      mavenDeployer {
+        repository(url: project.properties.repository) {
+          authentication(userName: project.properties.artifactoryUser, password: project.properties.artifactoryPass)
+        }
+        snapshotRepository(url: project.properties.snapshotRepository) {
+          authentication(userName: project.properties.artifactoryUser, password: project.properties.artifactoryPass)
+        }
+      }
+    }
+  } 
+
+  task sourcesJar(type: Jar, dependsOn:classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+  }
+  
+  artifacts {
+    archives sourcesJar
+  }
+  
   jar {
     manifest { version = project.version.replace('-','.'); }
   }
@@ -40,7 +59,7 @@ configure(subprojects) {
     testCompile group: 'junit', name: 'junit', version: '4.10'
   }
 
-   task copyLibs(type: Copy) {
+  task copyLibs(type: Copy) {
     dependsOn(configurations.default.getAllArtifacts().getBuildDependencies())
 
     into rootDir.getPath() + "/build/libs"
@@ -62,7 +81,7 @@ task javadocs(type: Javadoc) {
     project -> project.sourceSets.main.allJava
   }
 
-  exclude '**/helper/**/*.java'
+  exclude '**/internal/**/*.java'
 
   destinationDir = new File(buildDir, 'javadoc')
 
@@ -92,6 +111,10 @@ task writeSettings << {
   out.close();
 }
 
+task buildDistProjects {
+  dependsOn(distributionProjects.build)
+}
+
 task (tar, type: Tar) {
   dependsOn(writeSettings)
   dependsOn(distributionProjects.build)
@@ -101,14 +124,18 @@ task (tar, type: Tar) {
 
   into(project.archivesBaseName) {
     from('./') {
-      include 'src/common/src/**/*'
-      include 'src/common/build.gradle'
+      include 'doc/**/*'
+      exclude 'doc/asciidoc'
+      include 'licenses/**/*'
+      include 'build/libs/**/*'
+      include 'build/javadoc/**/*'
+      include 'build.gradle'
+      include 'bin/**/*'
 
-      include 'src/client/src/**/*'
-      include 'src/client/build.gradle'
-
-      include 'src/server/src/**/*'
-      include 'src/server/build.gradle'
+      include 'src/openiec61850/src/**/*'
+      include 'src/openiec61850/build.gradle'
+      include 'src/openiec61850/dependencies/**/*'
+      include 'src/openiec61850/asn1/**/*'
 
       include 'src/sample/src/**/*'
       include 'src/sample/build.gradle'
@@ -117,21 +144,13 @@ task (tar, type: Tar) {
       include 'src/sample/sampleClient/**/*'
       exclude 'src/sample/sampleClient/**/*.sh'
 
-      include 'src/mms/jmms/src/**/*'
-      include 'src/mms/jmms/build.gradle'
-      include 'src/mms/jmms/dependencies/**/*'
-      include 'src/mms/jmms/asn1/**/*'
-      include 'src/mms/jmms/doc/**/*'
+      include 'src/clientgui/src/**/*'
+      include 'src/clientgui/build.gradle'
 
-      include 'src/mms/jositransport/src/**/*'
-      include 'src/mms/jositransport/doc/**/*'
-      include 'src/mms/jositransport/sample/**/*'
-
-      include 'doc/**/*'
-      include 'licenses/**/*'
-      include 'build/libs/**/*'
-      include 'build/javadoc/**/*'
-      include 'build.gradle'
+      include 'src/jositransport/src/**/*'
+      include 'src/jositransport/build.gradle'
+      include 'src/jositransport/doc/**/*'
+      include 'src/jositransport/sample/**/*'
     }
 
     from('./build/') {

@@ -62,6 +62,7 @@ public final class AcseAssociation {
 	boolean connected = false;
 	TConnection tConnection;
 	private ByteBuffer associateResponseAPDU = null;
+	private ACSE_apdu acseApdu;
 
 	private final BerOctetString pSelLocalBerOctetString;
 
@@ -748,9 +749,17 @@ public final class AcseAssociation {
 		ByteBufferInputStream iStream = new ByteBufferInputStream(pduBuffer);
 		cpType.decode(iStream, true);
 
-		ACSE_apdu acseApdu = new ACSE_apdu();
+		acseApdu = new ACSE_apdu(); //this is the AARQ
 		acseApdu.decode(iStream, null);
 	}
+
+	public AARQ_apdu getAarq() {
+		return acseApdu == null ? null : acseApdu.aarq;
+	}
+
+	public String getAuthenticationValue() {
+        return new String(acseApdu.aarq.calling_authentication_value.charstring.octetString);
+    }
 
 	public int getMessageTimeout() {
 		return tConnection.getMessageTimeout();

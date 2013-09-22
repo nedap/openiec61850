@@ -32,6 +32,7 @@ import org.openmuc.openiec61850.Fc;
 import org.openmuc.openiec61850.SclParseException;
 import org.openmuc.openiec61850.ServerModel;
 import org.openmuc.openiec61850.ServerSap;
+import org.openmuc.openiec61850.ServerSapSelector;
 import org.openmuc.openiec61850.ServerStopListener;
 import org.openmuc.openiec61850.ServiceError;
 import org.openmuc.openiec61850.WriteListener;
@@ -124,15 +125,15 @@ public class SampleServer implements ServerStopListener, WriteListener {
 	}
 
 	@Override
-	public void serverStoppedListening(ServerSap serverSap) {
-		logger.error("The SAP stopped listening");
-	}
-
-	@Override
 	public void write(BasicDataAttribute bda) throws ServiceError {
 		// calling of this method still has to be implemented
 		logger.info("got a write request: " + bda);
 
 	}
+
+    @Override
+    public void serverStoppedListening(ServerSapSelector serverSAP) {
+        logger.error("The SAP stopped listening");
+    }
 
 }

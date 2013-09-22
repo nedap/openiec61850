@@ -30,7 +30,6 @@ import java.util.Timer;
 import javax.net.ServerSocketFactory;
 
 import org.openmuc.openiec61850.internal.acse.AcseAssociation;
-import org.openmuc.openiec61850.internal.acse.ServerAcseSap;
 
 /**
  * The <code>ServerSap</code> class represents the IEC 61850 service access point for server applications. It
@@ -40,7 +39,7 @@ import org.openmuc.openiec61850.internal.acse.ServerAcseSap;
  * <code>startListening</code> function is called to listen for client associations. Changing properties of a ServerSap
  * after starting to listen is not recommended and has unknown effects.
  */
-public final class ServerSap {
+public final class ServerSap extends ServerSapSelector implements ServerSapInterface {
 
 	static final int MINIMUM_MMS_PDU_SIZE = 64;
 	private static final int MAXIMUM_MMS_PDU_SIZE = 65000;
@@ -49,25 +48,17 @@ public final class ServerSap {
 	private int proposedMaxServOutstandingCalling = 5;
 	private int proposedMaxServOutstandingCalled = 5;
 	private int proposedDataStructureNestingLevel = 10;
-	byte[] servicesSupportedCalled = new byte[] { (byte) 0xee, 0x1c, 0, 0, 0x04, 0x08, 0, 0, 0x79, (byte) 0xef, 0x18 };
-	byte[] cbbBitString = { (byte) (0xfb), 0x00 };
-
-	private ServerStopListener sapStopListener;
-	private ServerAcseSap acseSap;
+	private byte[] servicesSupportedCalled = new byte[] { (byte) 0xee, 0x1c, 0, 0, 0x04, 0x08, 0, 0, 0x79, (byte) 0xef, 0x18 };
+	private byte[] cbbBitString = { (byte) (0xfb), 0x00 };
 
 	private final String name;
-	private int port = 102;
-	private int backlog = 0;
-	private InetAddress bindAddr = null;
-	private ServerSocketFactory serverSocketFactory = null;
 
-	Timer timer;
+	private Timer timer;
 
-	List<ServerAssociation> associations = new ArrayList<ServerAssociation>();
-	boolean listening = false;
+	private boolean listening = false;
 
-	final ServerModel serverModel;
-	WriteListener writeListener;
+	private final ServerModel serverModel;
+	private WriteListener writeListener;
 
 	public static List<ServerSap> getSapsFromSclFile(String sclFilePath) throws SclParseException {
 		SclParser sclParserObject = new SclParser();
@@ -77,7 +68,7 @@ public final class ServerSap {
 
 	/**
 	 * Creates a ServerSap.
-	 * 
+	 *
 	 * @param port
 	 *            local port to listen on for new connections
 	 * @param backlog
@@ -89,86 +80,32 @@ public final class ServerSap {
 	 * @param serverSocketFactory
 	 *            the factory class to generate the ServerSocket. Could be used to create SSLServerSockets. null =
 	 *            default
-	 * 
+	 *
 	 */
-	ServerSap(int port, int backlog, InetAddress bindAddr, ServerModel serverModel, String name,
+	public ServerSap(int port, int backlog, InetAddress bindAddr, ServerModel serverModel, String name,
 			ServerSocketFactory serverSocketFactory) {
-		this.port = port;
-		this.backlog = backlog;
-		this.bindAddr = bindAddr;
-		this.serverSocketFactory = serverSocketFactory;
+        super(serverSocketFactory, port, bindAddr, backlog);
 		this.name = name;
 		this.serverModel = serverModel;
 	}
 
-	/**
-	 * Sets local port to listen on for new connections.
-	 * 
-	 * @param port
-	 *            local port to listen on for new connections
-	 */
-	public void setPort(int port) {
-		this.port = port;
-	}
 
-	public int getPort() {
-		return port;
-	}
-
-	/**
-	 * Sets the maximum queue length for incoming connection indications (a request to connect) is set to the backlog
-	 * parameter. If a connection indication arrives when the queue is full, the connection is refused. Set to 0 or less
-	 * for the default value.
-	 * 
-	 * @param backlog
-	 *            the maximum queue length for incoming connections.
-	 */
-	public void setBacklog(int backlog) {
-		this.backlog = backlog;
-	}
-
-	public int getBacklog() {
-		return backlog;
-	}
-
-	/**
-	 * Sets the local IP address to bind to, pass null to bind to all
-	 * 
-	 * @param bindAddr
-	 *            the local IP address to bind to
-	 */
-	public void setBindAddress(InetAddress bindAddr) {
-		this.bindAddr = bindAddr;
-	}
-
-	public InetAddress getBindAddress() {
-		return bindAddr;
-	}
 
 	/**
 	 * Returns the name of the ServerSap / AccessPoint as specified in the SCL file.
-	 * 
+	 *
 	 * @return the name.
 	 */
 	public String getName() {
 		return name;
 	}
 
-	/**
-	 * Sets the factory class to generate the ServerSocket. The ServerSocketFactory could be used to create
-	 * SSLServerSockets. Set to <code>null</code> to use <code>ServerSocketFactory.getDefault()</code>.
-	 * 
-	 * @param serverSocketFactory
-	 *            the factory class to generate the ServerSocket.
-	 */
-	public void setServerSocketFactory(ServerSocketFactory serverSocketFactory) {
-		this.serverSocketFactory = serverSocketFactory;
-	}
+
 
 	/**
 	 * Sets the maximum MMS PDU size in bytes that the server will support. If the client requires the use of a smaller
 	 * maximum MMS PDU size, then the smaller size will be accepted by the server. The default size is 65000.
-	 * 
+	 *
 	 * @param size
 	 *            cannot be less than 64. The upper limit is 65000 so that segmentation at the lower transport layer is
 	 *            avoided. The Transport Layer's maximum PDU size is 65531.
@@ -184,38 +121,19 @@ public final class ServerSap {
 
 	/**
 	 * Gets the maximum MMS PDU size.
-	 * 
+	 *
 	 * @return the maximum MMS PDU size.
 	 */
+    @Override
 	public int getMaxMmsPduSize() {
 		return proposedMaxMmsPduSize;
 	}
 
-	/**
-	 * Set the maximum number of associations that are allowed in parallel by the server.
-	 * 
-	 * @param maxAssociations
-	 *            the number of associations allowed (default is 100)
-	 */
-	public void setMaxAssociations(int maxAssociations) {
-		acseSap.serverTSap.setMaxConnections(maxAssociations);
-	}
-
-	/**
-	 * Sets the message fragment timeout. This is the timeout that the socket timeout is set to after the first byte of
-	 * a message has been received. If such a timeout is thrown, the association/socket is closed.
-	 * 
-	 * @param timeout
-	 *            the message fragment timeout in milliseconds. The default is 60000.
-	 */
-	public void setMessageFragmentTimeout(int timeout) {
-		acseSap.serverTSap.setMessageFragmentTimeout(timeout);
-	}
 
 	/**
 	 * Sets the ProposedMaxServOutstandingCalling parameter. The given parameter has no affect on the functionality of
 	 * this server.
-	 * 
+	 *
 	 * @param maxCalling
 	 *            the ProposedMaxServOutstandingCalling parameter. The default is 5.
 	 */
@@ -225,9 +143,10 @@ public final class ServerSap {
 
 	/**
 	 * Gets the ProposedMaxServOutstandingCalling parameter.
-	 * 
+	 *
 	 * @return the ProposedMaxServOutstandingCalling parameter.
 	 */
+    @Override
 	public int getProposedMaxServOutstandingCalling() {
 		return proposedMaxServOutstandingCalling;
 	}
@@ -235,7 +154,7 @@ public final class ServerSap {
 	/**
 	 * Sets the ProposedMaxServOutstandingCalled parameter.The given parameter has no affect on the functionality of
 	 * this server.
-	 * 
+	 *
 	 * @param maxCalled
 	 *            the ProposedMaxServOutstandingCalled parameter. The default is 5.
 	 */
@@ -245,7 +164,7 @@ public final class ServerSap {
 
 	/**
 	 * Gets the ProposedMaxServOutstandingCalled parameter.
-	 * 
+	 *
 	 * @return the ProposedMaxServOutstandingCalled parameter.
 	 */
 	public int getProposedMaxServOutstandingCalled() {
@@ -255,7 +174,7 @@ public final class ServerSap {
 	/**
 	 * Sets the ProposedDataStructureNestingLevel parameter. The given parameter has no affect on the functionality of
 	 * this server.
-	 * 
+	 *
 	 * @param nestingLevel
 	 *            the ProposedDataStructureNestingLevel parameter. The default is 10.
 	 */
@@ -265,16 +184,17 @@ public final class ServerSap {
 
 	/**
 	 * Gets the ProposedDataStructureNestingLevel parameter.
-	 * 
+	 *
 	 * @return the ProposedDataStructureNestingLevel parameter.
 	 */
+    @Override
 	public int getProposedDataStructureNestingLevel() {
 		return proposedDataStructureNestingLevel;
 	}
 
 	/**
 	 * Sets the SevicesSupportedCalled parameter. The given parameter has no affect on the functionality of this server.
-	 * 
+	 *
 	 * @param services
 	 *            the ServicesSupportedCalled parameter
 	 */
@@ -287,16 +207,17 @@ public final class ServerSap {
 
 	/**
 	 * Gets the ServicesSupportedCalled parameter.
-	 * 
+	 *
 	 * @return the ServicesSupportedCalled parameter.
 	 */
+    @Override
 	public byte[] getServicesSupportedCalled() {
 		return servicesSupportedCalled;
 	}
 
 	/**
 	 * Creates a server socket waiting on the configured port for incoming association requests.
-	 * 
+	 *
 	 * @param sapStopListener
 	 *            the listener that is notified when the server stopped listening for some reason.
 	 * @param defaultWriteListener
@@ -307,52 +228,20 @@ public final class ServerSap {
 	public void startListening(ServerStopListener sapStopListener, WriteListener defaultWriteListener)
 			throws IOException {
 		timer = new Timer();
-		if (serverSocketFactory == null) {
-			serverSocketFactory = ServerSocketFactory.getDefault();
-		}
+        super.startListening(sapStopListener);
 		writeListener = defaultWriteListener;
-		acseSap = new ServerAcseSap(port, backlog, bindAddr, new AcseListener(this), serverSocketFactory);
-		this.sapStopListener = sapStopListener;
-		acseSap.startListening();
 	}
 
 	/**
 	 * Stops listening for new connections and closes all existing connections/associations.
 	 */
 	public void stop() {
-		acseSap.stopListening();
-		synchronized (associations) {
-			listening = false;
-			for (ServerAssociation association : associations) {
-				association.stop();
-			}
-			associations.clear();
-		}
+		super.stop();
+		listening = false;
 	}
 
-	void connectionIndication(AcseAssociation acseAssociation, ByteBuffer psdu) {
-		ServerAssociation association;
-		synchronized (associations) {
-			if (listening = true) {
-				association = new ServerAssociation(this);
-				associations.add(association);
-			}
-			else {
-				acseAssociation.close();
-				return;
-			}
-		}
-		association.handleNewAssociation(acseAssociation, psdu);
-		synchronized (associations) {
-			associations.remove(association);
-		}
-	}
-
-	void serverStoppedListeningIndication(IOException e) {
-		sapStopListener.serverStoppedListening(this);
-	}
-
-	void addNonPersistentDataSet(DataSet dataSet, ServerAssociation connectionHandler) {
+    @Override
+	public void addNonPersistentDataSet(DataSet dataSet, ServerAssociation connectionHandler) {
 		// TODO Auto-generated method stub
 	}
 
@@ -372,4 +261,47 @@ public final class ServerSap {
 			}
 		}
 	}
+
+     public static int getMINIMUM_MMS_PDU_SIZE() {
+        return MINIMUM_MMS_PDU_SIZE;
+    }
+
+    public static int getMAXIMUM_MMS_PDU_SIZE() {
+        return MAXIMUM_MMS_PDU_SIZE;
+    }
+
+    @Override
+    public int getProposedMaxMmsPduSize() {
+        return proposedMaxMmsPduSize;
+    }
+
+    @Override
+    public byte[] getCbbBitString() {
+        return cbbBitString;
+    }
+
+    @Override
+    public Timer getTimer() {
+        return timer;
+    }
+
+    public boolean isListening() {
+        return listening;
+    }
+
+
+    @Override
+    public ServerModel getServerModel() {
+        return serverModel;
+    }
+
+    @Override
+    public WriteListener getWriteListener() {
+        return writeListener;
+    }
+
+    @Override
+    ServerSapInterface getSap(AcseAssociation acseAssociation, ByteBuffer psdu) {
+        return this;
+    }
 }

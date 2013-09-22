@@ -23,6 +23,6 @@ package org.openmuc.openiec61850;
 
 public interface ServerStopListener {
 
-	void serverStoppedListening(ServerSap serverSAP);
+	void serverStoppedListening(ServerSapSelector serverSAP);
 
 }

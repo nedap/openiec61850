@@ -470,7 +470,7 @@ public final class ClientAssociation {
 		if (serverSaps == null || serverSaps.size() == 0) {
 			throw new SclParseException("No AccessPoint found in SCL file.");
 		}
-		serverModel = serverSaps.get(0).serverModel;
+		serverModel = serverSaps.get(0).getServerModel();
 		return serverModel;
 	}
 

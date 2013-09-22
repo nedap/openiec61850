@@ -80,6 +80,9 @@ import org.openmuc.openiec61850.internal.mms.asn1.WriteResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * ONE connection between a client and a server - the server side variant
+ */
 final class ServerAssociation {
 
 	private final static Logger logger = LoggerFactory.getLogger(ServerAssociation.class);
@@ -90,7 +93,7 @@ final class ServerAssociation {
 
 	private int negotiatedMaxPduSize;
 	private ByteBuffer pduBuffer;
-	private final ServerSap serverSap;
+	private final ServerSapInterface serverSap;
 	final ServerModel serverModel;
 
 	private final BerByteArrayOutputStream berOStream = new BerByteArrayOutputStream(500, true);
@@ -102,9 +105,9 @@ final class ServerAssociation {
 	private static String[] mmsFcs = { "MX", "ST", "CO", "CF", "DC", "SP", "SG", "RP", "LG", "BR", "GO", "GS", "SV",
 			"SE", "EX", "SR", "OR", "BL" };
 
-	public ServerAssociation(ServerSap serverSap) {
+	public ServerAssociation(ServerSapInterface serverSap) {
 		this.serverSap = serverSap;
-		serverModel = serverSap.serverModel;
+		serverModel = serverSap.getServerModel();
 	}
 
 	public void handleNewAssociation(AcseAssociation acseAssociation, ByteBuffer associationRequest) {
@@ -188,9 +191,9 @@ final class ServerAssociation {
 
 		pduBuffer = ByteBuffer.allocate(negotiatedMaxPduSize + 500);
 
-		byte[] negotiatedParameterCbbBitString = serverSap.cbbBitString;
+		byte[] negotiatedParameterCbbBitString = serverSap.getCbbBitString();
 
-		byte[] servicesSupportedCalledBitString = serverSap.servicesSupportedCalled;
+		byte[] servicesSupportedCalledBitString = serverSap.getServicesSupportedCalled();
 
 		InitResponseDetail initRespDetail = new InitResponseDetail(new BerInteger(1), new BerBitString(
 				negotiatedParameterCbbBitString, negotiatedParameterCbbBitString.length * 8 - 5), new BerBitString(
@@ -889,7 +892,7 @@ final class ServerAssociation {
 				// 3 indicates error "object_access_denied"
 				return new AccessResult(new BerInteger(3L), null);
 			}
-			if (!cdcParent.select(this, serverSap.timer)) {
+			if (!cdcParent.select(this, serverSap.getTimer())) {
 				return new AccessResult(null, new Data(null, null, null, null, null, null, null, null,
 						new BerVisibleString(""), null, null, null));
 			}
@@ -1039,7 +1042,7 @@ final class ServerAssociation {
 
 			for (BasicDataAttribute bda : bdas) {
 				try {
-					serverSap.writeListener.write(bda);
+					serverSap.getWriteListener().write(bda);
 					bda.getMirror().setValueFrom(bda);
 				} catch (ServiceError e) {
 					result = new WriteResponse.SubChoice(new BerInteger(serviceErrorToMmsError(e)), null);
@@ -1064,7 +1067,7 @@ final class ServerAssociation {
 
 		BasicDataAttribute ctlValBda = (BasicDataAttribute) fcModelNodeCopy.getChild("ctlVal");
 		try {
-			serverSap.writeListener.write(ctlValBda);
+			serverSap.getWriteListener().write(ctlValBda);
 		} catch (ServiceError e) {
 			return new WriteResponse.SubChoice(new BerInteger(serviceErrorToMmsError(e)), null);
 		}

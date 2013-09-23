@@ -93,7 +93,7 @@ final class ServerAssociation {
 
 	private int negotiatedMaxPduSize;
 	private ByteBuffer pduBuffer;
-	private final ServerSapInterface serverSap;
+	private final ServerSap serverSap;
 	final ServerModel serverModel;
 
 	private final BerByteArrayOutputStream berOStream = new BerByteArrayOutputStream(500, true);
@@ -105,7 +105,7 @@ final class ServerAssociation {
 	private static String[] mmsFcs = { "MX", "ST", "CO", "CF", "DC", "SP", "SG", "RP", "LG", "BR", "GO", "GS", "SV",
 			"SE", "EX", "SR", "OR", "BL" };
 
-	public ServerAssociation(ServerSapInterface serverSap) {
+	public ServerAssociation(ServerSap serverSap) {
 		this.serverSap = serverSap;
 		serverModel = serverSap.getServerModel();
 	}
@@ -609,7 +609,7 @@ final class ServerAssociation {
 	/**
 	 * GetVariableAccessAttributes (GetDataDefinition/GetDataDirectory) can be called with different kinds of
 	 * references. Examples: 1. DGEN1 2. DGEN1$CF 3. DGEN1$CF$GnBlk
-	 * 
+	 *
 	 */
 	@SuppressWarnings("unchecked")
 	private GetVariableAccessAttributesResponse handleGetVariableAccessAttributesRequest(

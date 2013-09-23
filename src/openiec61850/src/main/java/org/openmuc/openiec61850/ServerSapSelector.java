@@ -4,6 +4,7 @@
  */
 package org.openmuc.openiec61850;
 
+import org.openmuc.openiec61850.server.security.Authenticator;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
@@ -18,20 +19,16 @@ import org.openmuc.openiec61850.internal.acse.AcseAssociationListener;
 import org.openmuc.openiec61850.internal.acse.ServerAcseSap;
 
 /**
- * Server implementation that allows you to do authentication.
- * This can be no authentication, authentication based on TLS, on AARQ, or on anything else
  *
- * To use, implement the getSap() method to return a @ServerSapInterface - or not if not authenticated
+ * Handles lower levels of the connection stack: TCP, (possibly) TLS and Acse.
  *
- * Can also be used to proxy multiple ServerModels based on authentication value, for example when running
- * IEC61850 as a proxy for many other devices, with access control.
- *
+ * Sets up a socket, handles Acse, then passes the connection through authentication.
+ * If succesful, the connection gets handed over to the ServerSap.
+ * If not succesful, the connection is closed.
  *
  * @author pieter.bos
  */
 public abstract class ServerSapSelector implements AcseAssociationListener {
-
-    private Map<String, ServerSapInterface> models;
 
     private ServerSocketFactory serverSocketFactory;
     private InetAddress bindAddress;
@@ -43,12 +40,34 @@ public abstract class ServerSapSelector implements AcseAssociationListener {
     private final List<ServerAssociation> associations;
     private ServerStopListener sapStopListener;
 
-    public ServerSapSelector(ServerSocketFactory factory, int backlog, InetAddress bindAddress, int port) {
+    private Authenticator authenticator;
+
+    /**
+     * For use in ServerSap only
+     * @param factory
+     * @param backlog
+     * @param bindAddress
+     * @param port
+     */
+    protected ServerSapSelector(ServerSocketFactory factory, int backlog, InetAddress bindAddress, int port) {
+        this(factory, backlog, bindAddress, port, null);
+    }
+
+    public ServerSapSelector(ServerSocketFactory factory, int backlog, InetAddress bindAddress, int port, Authenticator authenticator) {
         this.serverSocketFactory = factory;
         this.bindAddress = bindAddress;
         this.port = port;
         this.backlog = backlog;
         associations = new ArrayList<ServerAssociation>();
+        this.authenticator = authenticator;
+    }
+
+    /**
+     * Set the authenticator.
+     * @param authenticator
+     */
+    public void setAuthenticator(Authenticator authenticator) {
+        this.authenticator = authenticator;
     }
 
     /**
@@ -71,13 +90,9 @@ public abstract class ServerSapSelector implements AcseAssociationListener {
 		acseSap.startListening();
 	}
 
-    public void addServerSap(String id, ServerSapInterface sap) {
-        models.put(id, sap);
-    }
-
     @Override
     public void connectionIndication(AcseAssociation acseAssociation, ByteBuffer psdu) {
-        ServerSapInterface serverSap = getSap(acseAssociation, psdu);
+        ServerSap serverSap = authenticator.acceptConnection(acseAssociation, psdu);
         if(serverSap != null) {
             ServerAssociation association = new ServerAssociation(serverSap);
             synchronized(associations) {
@@ -120,16 +135,6 @@ public abstract class ServerSapSelector implements AcseAssociationListener {
 	public void setMaxAssociations(int maxAssociations) {
 		acseSap.serverTSap.setMaxConnections(maxAssociations);
 	}
-
-    /**
-     * Selects the actual serversap. Return the ServerSapInterface if a connection is allowed
-     * return null otherwise.
-     * @param acseAssociation
-     * @param psdu
-     * @return
-     */
-    abstract ServerSapInterface getSap(AcseAssociation acseAssociation, ByteBuffer psdu);
-
 
     /**
 	 * Sets local port to listen on for new connections.

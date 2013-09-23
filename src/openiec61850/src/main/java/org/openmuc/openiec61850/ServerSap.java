@@ -39,7 +39,7 @@ import org.openmuc.openiec61850.internal.acse.AcseAssociation;
  * <code>startListening</code> function is called to listen for client associations. Changing properties of a ServerSap
  * after starting to listen is not recommended and has unknown effects.
  */
-public final class ServerSap extends ServerSapSelector implements ServerSapInterface {
+public final class ServerSap extends ServerSapSelector {
 
 	static final int MINIMUM_MMS_PDU_SIZE = 64;
 	private static final int MAXIMUM_MMS_PDU_SIZE = 65000;
@@ -84,12 +84,11 @@ public final class ServerSap extends ServerSapSelector implements ServerSapInter
 	 */
 	public ServerSap(int port, int backlog, InetAddress bindAddr, ServerModel serverModel, String name,
 			ServerSocketFactory serverSocketFactory) {
-        super(serverSocketFactory, port, bindAddr, backlog);
+        super(serverSocketFactory, backlog, bindAddr, port, null);
+        super.setAuthenticator(new NoSecurityAuthenticator(this));
 		this.name = name;
 		this.serverModel = serverModel;
 	}
-
-
 
 	/**
 	 * Returns the name of the ServerSap / AccessPoint as specified in the SCL file.
@@ -124,7 +123,6 @@ public final class ServerSap extends ServerSapSelector implements ServerSapInter
 	 *
 	 * @return the maximum MMS PDU size.
 	 */
-    @Override
 	public int getMaxMmsPduSize() {
 		return proposedMaxMmsPduSize;
 	}
@@ -146,7 +144,6 @@ public final class ServerSap extends ServerSapSelector implements ServerSapInter
 	 *
 	 * @return the ProposedMaxServOutstandingCalling parameter.
 	 */
-    @Override
 	public int getProposedMaxServOutstandingCalling() {
 		return proposedMaxServOutstandingCalling;
 	}
@@ -187,7 +184,6 @@ public final class ServerSap extends ServerSapSelector implements ServerSapInter
 	 *
 	 * @return the ProposedDataStructureNestingLevel parameter.
 	 */
-    @Override
 	public int getProposedDataStructureNestingLevel() {
 		return proposedDataStructureNestingLevel;
 	}
@@ -210,7 +206,6 @@ public final class ServerSap extends ServerSapSelector implements ServerSapInter
 	 *
 	 * @return the ServicesSupportedCalled parameter.
 	 */
-    @Override
 	public byte[] getServicesSupportedCalled() {
 		return servicesSupportedCalled;
 	}
@@ -240,8 +235,7 @@ public final class ServerSap extends ServerSapSelector implements ServerSapInter
 		listening = false;
 	}
 
-    @Override
-	public void addNonPersistentDataSet(DataSet dataSet, ServerAssociation connectionHandler) {
+	protected void addNonPersistentDataSet(DataSet dataSet, ServerAssociation connectionHandler) {
 		// TODO Auto-generated method stub
 	}
 
@@ -270,18 +264,16 @@ public final class ServerSap extends ServerSapSelector implements ServerSapInter
         return MAXIMUM_MMS_PDU_SIZE;
     }
 
-    @Override
+
     public int getProposedMaxMmsPduSize() {
         return proposedMaxMmsPduSize;
     }
 
-    @Override
     public byte[] getCbbBitString() {
         return cbbBitString;
     }
 
-    @Override
-    public Timer getTimer() {
+    protected Timer getTimer() {
         return timer;
     }
 
@@ -289,19 +281,11 @@ public final class ServerSap extends ServerSapSelector implements ServerSapInter
         return listening;
     }
 
-
-    @Override
-    public ServerModel getServerModel() {
+    protected ServerModel getServerModel() {
         return serverModel;
     }
 
-    @Override
     public WriteListener getWriteListener() {
         return writeListener;
-    }
-
-    @Override
-    ServerSapInterface getSap(AcseAssociation acseAssociation, ByteBuffer psdu) {
-        return this;
     }
 }

@@ -32,7 +32,7 @@ import org.openmuc.openiec61850.Fc;
 import org.openmuc.openiec61850.SclParseException;
 import org.openmuc.openiec61850.ServerModel;
 import org.openmuc.openiec61850.ServerSap;
-import org.openmuc.openiec61850.ServerSapSelector;
+import org.openmuc.openiec61850.ServerSapConnectionHandler;
 import org.openmuc.openiec61850.ServerStopListener;
 import org.openmuc.openiec61850.ServiceError;
 import org.openmuc.openiec61850.WriteListener;
@@ -132,7 +132,7 @@ public class SampleServer implements ServerStopListener, WriteListener {
 	}
 
     @Override
-    public void serverStoppedListening(ServerSapSelector serverSAP) {
+    public void serverStoppedListening(ServerSapConnectionHandler serverSAP) {
         logger.error("The SAP stopped listening");
     }
 

@@ -20,16 +20,14 @@
  */
 package org.openmuc.openiec61850;
 
+import org.openmuc.openiec61850.server.security.NoSecurityAuthenticator;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 
 import javax.net.ServerSocketFactory;
-
-import org.openmuc.openiec61850.internal.acse.AcseAssociation;
 
 /**
  * The <code>ServerSap</code> class represents the IEC 61850 service access point for server applications. It
@@ -39,7 +37,7 @@ import org.openmuc.openiec61850.internal.acse.AcseAssociation;
  * <code>startListening</code> function is called to listen for client associations. Changing properties of a ServerSap
  * after starting to listen is not recommended and has unknown effects.
  */
-public final class ServerSap extends ServerSapSelector {
+public final class ServerSap {
 
 	static final int MINIMUM_MMS_PDU_SIZE = 64;
 	private static final int MAXIMUM_MMS_PDU_SIZE = 65000;
@@ -55,14 +53,20 @@ public final class ServerSap extends ServerSapSelector {
 
 	private Timer timer;
 
-	private boolean listening = false;
-
 	private final ServerModel serverModel;
 	private WriteListener writeListener;
+
+    private ServerSapConnectionHandler connectionHandler;
 
 	public static List<ServerSap> getSapsFromSclFile(String sclFilePath) throws SclParseException {
 		SclParser sclParserObject = new SclParser();
 		sclParserObject.parse(sclFilePath);
+		return sclParserObject.getServerSaps();
+	}
+
+    public static List<ServerSap> getSapsFromSclFile(InputStream inputStream) throws SclParseException {
+		SclParser sclParserObject = new SclParser();
+		sclParserObject.parse(inputStream);
 		return sclParserObject.getServerSaps();
 	}
 
@@ -84,11 +88,21 @@ public final class ServerSap extends ServerSapSelector {
 	 */
 	public ServerSap(int port, int backlog, InetAddress bindAddr, ServerModel serverModel, String name,
 			ServerSocketFactory serverSocketFactory) {
-        super(serverSocketFactory, backlog, bindAddr, port, null);
-        super.setAuthenticator(new NoSecurityAuthenticator(this));
+        connectionHandler = new ServerSapConnectionHandler(serverSocketFactory, backlog, bindAddr, port, this,
+                new NoSecurityAuthenticator());
 		this.name = name;
 		this.serverModel = serverModel;
 	}
+
+    /**
+     * Creates a ServerSap, without network information.
+     * To use this as an actual server, manage the ServerSapConnectionHandler yourself.
+     * This is not required for most implementations.
+     */
+    public ServerSap(ServerModel serverModel, String name) {
+        this.name = name;
+        this.serverModel = serverModel;
+    }
 
 	/**
 	 * Returns the name of the ServerSap / AccessPoint as specified in the SCL file.
@@ -98,8 +112,6 @@ public final class ServerSap extends ServerSapSelector {
 	public String getName() {
 		return name;
 	}
-
-
 
 	/**
 	 * Sets the maximum MMS PDU size in bytes that the server will support. If the client requires the use of a smaller
@@ -223,7 +235,9 @@ public final class ServerSap extends ServerSapSelector {
 	public void startListening(ServerStopListener sapStopListener, WriteListener defaultWriteListener)
 			throws IOException {
 		timer = new Timer();
-        super.startListening(sapStopListener);
+        if(this.connectionHandler != null) {
+            connectionHandler.startListening(sapStopListener);
+        }
 		writeListener = defaultWriteListener;
 	}
 
@@ -231,8 +245,9 @@ public final class ServerSap extends ServerSapSelector {
 	 * Stops listening for new connections and closes all existing connections/associations.
 	 */
 	public void stop() {
-		super.stop();
-		listening = false;
+		if(connectionHandler != null) {
+            connectionHandler.stop();
+        }
 	}
 
 	protected void addNonPersistentDataSet(DataSet dataSet, ServerAssociation connectionHandler) {
@@ -278,7 +293,7 @@ public final class ServerSap extends ServerSapSelector {
     }
 
     public boolean isListening() {
-        return listening;
+        return connectionHandler != null && connectionHandler.isListening();
     }
 
     protected ServerModel getServerModel() {
@@ -287,5 +302,35 @@ public final class ServerSap extends ServerSapSelector {
 
     public WriteListener getWriteListener() {
         return writeListener;
+    }
+
+    public void setPort(int port) {
+        if(connectionHandler != null) {
+            connectionHandler.setPort(port);
+        } else {
+            throw new IllegalStateException("Cannot set a port for a ServerSap which has no connectionHandler");
+        }
+    }
+
+    public int getPort() {
+        if(connectionHandler != null) {
+            return connectionHandler.getPort();
+        }
+        throw new IllegalStateException("Cannot return a port for a ServerSap which has no connectionHandler");
+    }
+
+    public InetAddress getBindAddress() {
+        if(connectionHandler != null) {
+            return connectionHandler.getBindAddress();
+        }
+        throw new IllegalStateException("Cannot return a bind address for a ServerSap which has no connectionHandler");
+    }
+
+    public void setBindAddress(InetAddress bindAddress) {
+        if(connectionHandler != null) {
+            connectionHandler.setBindAddress(bindAddress);
+        } else {
+            throw new IllegalStateException("Cannot set a bind address for a ServerSap which has no connectionHandler");
+        }
     }
 }

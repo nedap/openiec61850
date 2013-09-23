@@ -21,12 +21,18 @@
 package org.openmuc.openiec61850;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -47,7 +53,7 @@ import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
-final class SclParser {
+public final class SclParser {
 
 	private TypeDefinitions typeDefinitions;
 	private final Map<String, DataSet> dataSetsMap = new HashMap<String, DataSet>();
@@ -65,14 +71,30 @@ final class SclParser {
 	}
 
 	public void parse(String icdFile) throws SclParseException {
+        FileInputStream in = null;
+        try {
+             in = new FileInputStream(icdFile);
+            parse(in);
+        } catch (FileNotFoundException ex) {
+            throw new SclParseException(ex);
+        } finally {
+            if(in != null) {
+                try {
+                    in.close();
+                } catch (IOException ex) {
+                    throw new SclParseException(ex);
+                }
+            }
+        }
+    }
+    public void parse(InputStream inputStream) throws SclParseException {
 
-		typeDefinitions = new TypeDefinitions();
-
-		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        typeDefinitions = new TypeDefinitions();
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		factory.setIgnoringComments(true);
 
 		try {
-			doc = factory.newDocumentBuilder().parse("file:" + new File(icdFile).getAbsolutePath());
+			doc = factory.newDocumentBuilder().parse(inputStream);
 		} catch (Exception e) {
 			throw new SclParseException(e);
 		}

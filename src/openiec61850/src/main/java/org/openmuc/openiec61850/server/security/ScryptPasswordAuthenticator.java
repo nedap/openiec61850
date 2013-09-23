@@ -5,7 +5,9 @@
 package org.openmuc.openiec61850.server.security;
 
 import com.lambdaworks.crypto.SCryptUtil;
+import java.nio.ByteBuffer;
 import org.openmuc.openiec61850.ServerSap;
+import org.openmuc.openiec61850.internal.acse.AcseAssociation;
 
 /**
  * Checks a password based on an scrypt hash.
@@ -20,17 +22,18 @@ import org.openmuc.openiec61850.ServerSap;
  *
  * @author pieter.bos
  */
-public class ScryptPasswordAuthenticator extends PasswordAuthenticator {
+public class ScryptPasswordAuthenticator implements Authenticator {
 
     private String passwordHash;
 
     public ScryptPasswordAuthenticator(ServerSap sap, String passwordHash) {
-        super(sap);
         this.passwordHash = passwordHash;
     }
 
     @Override
-    public boolean checkPassword(String authenticationValue) {
+    public boolean acceptConnection(AcseAssociation acseAssociation, ByteBuffer psdu) {
+        String authenticationValue =
+                new String(acseAssociation.getAarq().calling_authentication_value.charstring.octetString);
         return SCryptUtil.check(authenticationValue, passwordHash);
     }
 

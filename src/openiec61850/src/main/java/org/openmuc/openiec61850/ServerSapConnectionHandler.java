@@ -9,14 +9,14 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Timer;
 import javax.net.ServerSocketFactory;
 import org.openmuc.openiec61850.internal.acse.AcseAssociation;
 import org.openmuc.openiec61850.internal.acse.AcseAssociationListener;
 import org.openmuc.openiec61850.internal.acse.ServerAcseSap;
+import org.openmuc.openiec61850.server.security.BaseAuthenticator;
+import org.openmuc.openiec61850.server.security.MultiServerSapAuthenticator;
+import org.openmuc.openiec61850.server.security.NoSecurityAuthenticator;
 
 /**
  *
@@ -28,7 +28,7 @@ import org.openmuc.openiec61850.internal.acse.ServerAcseSap;
  *
  * @author pieter.bos
  */
-public abstract class ServerSapSelector implements AcseAssociationListener {
+public class ServerSapConnectionHandler implements AcseAssociationListener {
 
     private ServerSocketFactory serverSocketFactory;
     private InetAddress bindAddress;
@@ -40,26 +40,41 @@ public abstract class ServerSapSelector implements AcseAssociationListener {
     private final List<ServerAssociation> associations;
     private ServerStopListener sapStopListener;
 
-    private Authenticator authenticator;
+    private BaseAuthenticator authenticator;
+
+    private ServerSap serverSap;
+
+    private boolean listening;
 
     /**
-     * For use in ServerSap only
+     * Construct without security
      * @param factory
      * @param backlog
      * @param bindAddress
      * @param port
      */
-    protected ServerSapSelector(ServerSocketFactory factory, int backlog, InetAddress bindAddress, int port) {
-        this(factory, backlog, bindAddress, port, null);
+    public ServerSapConnectionHandler(ServerSocketFactory factory, int backlog, InetAddress bindAddress, int port, ServerSap serverSap) {
+        this(factory, backlog, bindAddress, port, serverSap, new NoSecurityAuthenticator());
     }
 
-    public ServerSapSelector(ServerSocketFactory factory, int backlog, InetAddress bindAddress, int port, Authenticator authenticator) {
+    public ServerSapConnectionHandler(ServerSocketFactory factory, int backlog, InetAddress bindAddress, int port, ServerSap serverSap, BaseAuthenticator authenticator) {
         this.serverSocketFactory = factory;
         this.bindAddress = bindAddress;
         this.port = port;
         this.backlog = backlog;
         associations = new ArrayList<ServerAssociation>();
         this.authenticator = authenticator;
+        this.serverSap = serverSap;
+    }
+
+     public ServerSapConnectionHandler(ServerSocketFactory factory, int backlog, InetAddress bindAddress, int port, MultiServerSapAuthenticator authenticator) {
+        this.serverSocketFactory = factory;
+        this.bindAddress = bindAddress;
+        this.port = port;
+        this.backlog = backlog;
+        associations = new ArrayList<ServerAssociation>();
+        this.authenticator = authenticator;
+        this.serverSap = null; //serversap will come from the authenticator
     }
 
     /**
@@ -88,13 +103,26 @@ public abstract class ServerSapSelector implements AcseAssociationListener {
 		this.acseSap = new ServerAcseSap(port, backlog, bindAddress, this, serverSocketFactory);
 		this.sapStopListener = sapStopListener;
 		acseSap.startListening();
+        listening = false;
 	}
 
     @Override
     public void connectionIndication(AcseAssociation acseAssociation, ByteBuffer psdu) {
-        ServerSap serverSap = authenticator.acceptConnection(acseAssociation, psdu);
-        if(serverSap != null) {
-            ServerAssociation association = new ServerAssociation(serverSap);
+
+        ServerSap selectedServerSap;
+        boolean authenticated;
+
+        //authenticate
+        if(authenticator instanceof MultiServerSapAuthenticator) {
+            selectedServerSap = ((MultiServerSapAuthenticator) authenticator).selectSap(acseAssociation, psdu);
+            authenticated = selectedServerSap != null;
+        } else {
+            selectedServerSap = this.serverSap;
+            authenticated = ((Authenticator) authenticator).acceptConnection(acseAssociation, psdu);
+        }
+
+        if(authenticated) {
+            ServerAssociation association = new ServerAssociation(selectedServerSap);
             synchronized(associations) {
                 associations.add(association);
             }
@@ -109,6 +137,7 @@ public abstract class ServerSapSelector implements AcseAssociationListener {
             acseAssociation.close();
         }
     }
+
 
     @Override
     public void serverStoppedListeningIndication(IOException e) {
@@ -149,8 +178,6 @@ public abstract class ServerSapSelector implements AcseAssociationListener {
 	public int getPort() {
 		return port;
 	}
-
-
 
 	/**
 	 * Sets the maximum queue length for incoming connection indications (a request to connect) is set to the backlog
@@ -197,10 +224,6 @@ public abstract class ServerSapSelector implements AcseAssociationListener {
         return acseSap;
     }
 
-    public void setAcseSap(ServerAcseSap acseSap) {
-        this.acseSap = acseSap;
-    }
-
     public ServerStopListener getSapStopListener() {
         return sapStopListener;
     }
@@ -209,7 +232,8 @@ public abstract class ServerSapSelector implements AcseAssociationListener {
         this.sapStopListener = sapStopListener;
     }
 
-    void stop() {
+    public void stop() {
+        listening = false;
         acseSap.stopListening();
         synchronized(associations) {
             for (ServerAssociation association : associations) {
@@ -219,8 +243,12 @@ public abstract class ServerSapSelector implements AcseAssociationListener {
         }
     }
 
-    public List<ServerAssociation> getAssociations() {
+    protected List<ServerAssociation> getAssociations() {
         return associations;
+    }
+
+    public boolean isListening() {
+        return listening;
     }
 
 

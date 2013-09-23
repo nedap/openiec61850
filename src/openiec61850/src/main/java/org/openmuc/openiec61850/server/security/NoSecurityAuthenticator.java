@@ -2,10 +2,11 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.openmuc.openiec61850;
+package org.openmuc.openiec61850.server.security;
 
 import org.openmuc.openiec61850.server.security.Authenticator;
 import java.nio.ByteBuffer;
+import org.openmuc.openiec61850.ServerSap;
 import org.openmuc.openiec61850.internal.acse.AcseAssociation;
 
 /**
@@ -18,15 +19,13 @@ import org.openmuc.openiec61850.internal.acse.AcseAssociation;
  */
 public class NoSecurityAuthenticator implements Authenticator {
 
-    public ServerSap serverSap;
+    public NoSecurityAuthenticator() {
 
-    public NoSecurityAuthenticator(ServerSap serverSap) {
-        this.serverSap = serverSap;
     }
 
     @Override
-    public ServerSap acceptConnection(AcseAssociation acseAssociation, ByteBuffer psdu) {
-        return serverSap;
+    public boolean acceptConnection(AcseAssociation acseAssociation, ByteBuffer psdu) {
+        return true;
     }
 
 

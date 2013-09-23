@@ -9,19 +9,22 @@ import org.openmuc.openiec61850.ServerSap;
 import org.openmuc.openiec61850.internal.acse.AcseAssociation;
 
 /**
+ * Simple authentication support. Return true or false, based on the ACSE AARQ.
+ *
+ * This works fine for servers which have the same servermodel for every connection, eg. probably most devices.
  *
  * @author pieter.bos
  */
-public interface Authenticator {
+public interface Authenticator extends BaseAuthenticator {
+
     /**
      * Gets called whenever a new connection has been initiated.
-     * Authentication can be processed here. Return the desired ServerSap on succesfull authentication.
-     * Return null if authentication failed.
+     * return true if connection is allowed, false otherwise.
+     * If false, the connection will be closed. If true, the connection will be handed over to the ServerSap
      *
-     * It is possible with this method to return different ServerSaps based on authenticationvalue
      * @param acseAssociation
      * @param psdu
      * @return
      */
-    ServerSap acceptConnection(AcseAssociation acseAssociation, ByteBuffer psdu);
+    boolean acceptConnection(AcseAssociation acseAssociation, ByteBuffer psdu);
 }

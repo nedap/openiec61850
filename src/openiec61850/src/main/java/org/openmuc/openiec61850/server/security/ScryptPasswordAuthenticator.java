@@ -6,7 +6,6 @@ package org.openmuc.openiec61850.server.security;
 
 import com.lambdaworks.crypto.SCryptUtil;
 import java.nio.ByteBuffer;
-import org.openmuc.openiec61850.ServerSap;
 import org.openmuc.openiec61850.internal.acse.AcseAssociation;
 
 /**
@@ -26,7 +25,7 @@ public class ScryptPasswordAuthenticator implements Authenticator {
 
     private String passwordHash;
 
-    public ScryptPasswordAuthenticator(ServerSap sap, String passwordHash) {
+    public ScryptPasswordAuthenticator(String passwordHash) {
         this.passwordHash = passwordHash;
     }
 

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Timer;
 
 import javax.net.ServerSocketFactory;
+import org.openmuc.openiec61850.server.security.Authenticator;
 
 /**
  * The <code>ServerSap</code> class represents the IEC 61850 service access point for server applications. It
@@ -329,6 +330,14 @@ public final class ServerSap {
     public void setBindAddress(InetAddress bindAddress) {
         if(connectionHandler != null) {
             connectionHandler.setBindAddress(bindAddress);
+        } else {
+            throw new IllegalStateException("Cannot set a bind address for a ServerSap which has no connectionHandler");
+        }
+    }
+
+    public void setAuthenticator(Authenticator authenticator) {
+        if(connectionHandler != null) {
+            connectionHandler.setAuthenticator(authenticator);
         } else {
             throw new IllegalStateException("Cannot set a bind address for a ServerSap which has no connectionHandler");
         }

@@ -34,6 +34,10 @@ import org.openmuc.openiec61850.Fc;
 import org.openmuc.openiec61850.FcModelNode;
 import org.openmuc.openiec61850.ModelNode;
 
+import com.lambdaworks.crypto.SCryptUtil;
+import java.io.EOFException;
+import org.openmuc.openiec61850.server.security.ScryptPasswordAuthenticator;
+
 /**
  *
  * @author pieter.bos
@@ -60,19 +64,21 @@ public class ClientServerTest {
         serverSap.startListening(new TestStopListener(), new TestWriteListener());
 
         clientSap = new ClientSap();
-		clientAssociation = clientSap.associate(InetAddress.getLocalHost(), PORT_NUMBER, null);
+
         writtenAttributes = new ArrayList<BasicDataAttribute>();
     }
 
     @After
     public void teardown() throws Exception {
         serverSap.stop();
-        clientAssociation.close();
+        if(clientAssociation != null) {
+            clientAssociation.close();
+        }
     }
 
     @Test
     public void testClientServerGetModel() throws Exception {
-
+        associateClient();
 
         Date now = new Date();
         {
@@ -110,6 +116,7 @@ public class ClientServerTest {
 
     @Test
     public void testWrite() throws Exception {
+        associateClient();
         ServerModel serverModelFromClient = clientAssociation.retrieveModel();
         clientAssociation.getAllDataValues();
         FcModelNode node = (FcModelNode) serverModelFromClient.findModelNode("ied1lDevice1/CSWI1.Pos.Oper", Fc.CO);
@@ -121,6 +128,32 @@ public class ClientServerTest {
         assertEquals(1, writtenAttributes.size());
         BdaBoolean serverSBO = (BdaBoolean) writtenAttributes.get(0);
         assertEquals(true, serverSBO.getValue());
+    }
+
+    @Test
+    public void testCorrectPassword() throws Exception {
+        String hash = SCryptUtil.scrypt("testpassword", 16384, 8, 1);
+        serverSap.setAuthenticator(new ScryptPasswordAuthenticator(hash));
+        clientAssociation = clientSap.associate(InetAddress.getLocalHost(), PORT_NUMBER, "testpassword");
+    }
+
+
+    @Test(expected=EOFException.class)
+    public void testInvalidPassword() throws Exception {
+        String hash = SCryptUtil.scrypt("testpassword", 16384, 8, 1);
+        serverSap.setAuthenticator(new ScryptPasswordAuthenticator(hash));
+        clientAssociation = clientSap.associate(InetAddress.getLocalHost(), PORT_NUMBER, "wrongpassword");
+    }
+
+    @Test(expected=EOFException.class)
+    public void testNoPassword() throws Exception {
+        String hash = SCryptUtil.scrypt("testpassword", 16384, 8, 1);
+        serverSap.setAuthenticator(new ScryptPasswordAuthenticator(hash));
+        clientAssociation = clientSap.associate(InetAddress.getLocalHost(), PORT_NUMBER, null);
+    }
+
+    private void associateClient() throws Exception {
+        clientAssociation = clientSap.associate(InetAddress.getLocalHost(), PORT_NUMBER, null);
     }
 
     class TestStopListener implements ServerStopListener {

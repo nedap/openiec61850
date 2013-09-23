@@ -111,29 +111,30 @@ public class ServerSapConnectionHandler implements AcseAssociationListener {
 
         ServerSap selectedServerSap;
         boolean authenticated;
-
-        //authenticate
-        if(authenticator instanceof MultiServerSapAuthenticator) {
-            selectedServerSap = ((MultiServerSapAuthenticator) authenticator).selectSap(acseAssociation, psdu);
-            authenticated = selectedServerSap != null;
-        } else {
-            selectedServerSap = this.serverSap;
-            authenticated = ((Authenticator) authenticator).acceptConnection(acseAssociation, psdu);
-        }
-
-        if(authenticated) {
-            ServerAssociation association = new ServerAssociation(selectedServerSap);
-            synchronized(associations) {
-                associations.add(association);
+        try {
+            //authenticate
+            if(authenticator instanceof MultiServerSapAuthenticator) {
+                selectedServerSap = ((MultiServerSapAuthenticator) authenticator).selectSap(acseAssociation, psdu);
+                authenticated = selectedServerSap != null;
+            } else {
+                selectedServerSap = this.serverSap;
+                authenticated = ((Authenticator) authenticator).acceptConnection(acseAssociation, psdu);
             }
-            try {
-                association.handleNewAssociation(acseAssociation, psdu);
-            } finally {
-                synchronized (associations) {
-                    associations.remove(association);
+
+            if(authenticated) {
+                ServerAssociation association = new ServerAssociation(selectedServerSap);
+                synchronized(associations) {
+                    associations.add(association);
+                }
+                try {
+                    association.handleNewAssociation(acseAssociation, psdu);
+                } finally {
+                    synchronized (associations) {
+                        associations.remove(association);
+                    }
                 }
             }
-        } else {
+        } finally {
             acseAssociation.close();
         }
     }

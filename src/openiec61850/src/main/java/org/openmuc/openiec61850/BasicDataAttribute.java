@@ -78,6 +78,14 @@ abstract public class BasicDataAttribute extends FcModelNode {
 		return null;
 	}
 
+    @Override
+    public ModelNode findChild(String[] objectReferenceTokens) {
+        if(objectReferenceTokens.length == 0) {
+            return this;
+        }
+        return null;
+    }
+
 	@Override
 	public Collection<ModelNode> getChildren() {
 		return null;

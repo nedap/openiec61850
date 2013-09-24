@@ -40,7 +40,7 @@ public final class Array extends FcModelNode {
 	 * An Array can contain up to n instances of one and the same DataObject, ConstructedDataAttribute, or
 	 * BasicDataAttribute. The children of the array have the name that equals the index in the array (e.g. "0","1"
 	 * etc.)
-	 * 
+	 *
 	 * @param objectReference
 	 * @param fc
 	 * @param children
@@ -73,6 +73,18 @@ public final class Array extends FcModelNode {
 	public ModelNode getChild(int index) {
 		return items.get(index);
 	}
+
+    @Override
+    public ModelNode findChild(String[] objectReferenceTokens) {
+        if(objectReferenceTokens.length == 0) {
+            return this;
+        }
+        if(objectReferenceTokens.length != 1) {
+            return null;
+        }
+        return getChild(objectReferenceTokens[0], null);
+
+    }
 
 	@Override
 	public ModelNode copy() {

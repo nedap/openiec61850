@@ -111,7 +111,7 @@ public final class ServerModel extends ModelNode {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param dataSetReference
 	 * @return returns the DataSet that was removed, null otherwise
 	 */
@@ -139,7 +139,7 @@ public final class ServerModel extends ModelNode {
 	/**
 	 * Searches and returns the model node with the given object reference and FC. If searching for Logical Devices and
 	 * Logical Nodes the given fc parameter may be <code>null</code>.
-	 * 
+	 *
 	 * @param objectReference
 	 *            the object reference of the node that is being searched for. It has a syntax like "ldname/ln.do....".
 	 * @param fc
@@ -166,10 +166,26 @@ public final class ServerModel extends ModelNode {
 		return findModelNode(new ObjectReference(objectReference), fc);
 	}
 
+    /**
+     * Find child. Do not care about FC. the chance of having two children with the same name is
+     * REALLY small, so this does the trick in most cases.
+     * Let's keep things simple, 61850 is more than complicated enough already.
+     * @param objectReference
+     * @return
+     */
+    public ModelNode findChildWithoutFc(String objectReference) {
+        ObjectReference reference = new ObjectReference(objectReference);
+        String[] tokens = new String[reference.size()];
+        for(int i = 0; i < tokens.length; i++ ){
+            tokens[i] = reference.get(i);
+        }
+        return findChild(tokens);
+    }
+
 	/**
 	 * Returns the subModelNode that is referenced by the given VariableDef. Return null in case the referenced
 	 * ModelNode is not found.
-	 * 
+	 *
 	 * @param variableDef
 	 * @return
 	 * @throws ServiceError

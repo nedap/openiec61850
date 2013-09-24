@@ -21,6 +21,7 @@
 package org.openmuc.openiec61850;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -53,6 +54,22 @@ public abstract class ModelNode implements Iterable<ModelNode> {
 	public ModelNode getChild(String childName, Fc fc) {
 		return children.get(childName);
 	}
+
+    public ModelNode findChild(String[] objectReferenceTokens) {
+        if(objectReferenceTokens.length == 0) {
+            return this;
+        }
+        
+        ModelNode child = children.get(objectReferenceTokens[0]);
+        if(child != null) {
+            return child.findChild(stripFirstFromReference(objectReferenceTokens));
+        }
+        return null;
+    }
+
+    public String[] stripFirstFromReference(String[] reference) {
+        return Arrays.copyOfRange(reference, 1, reference.length);
+    }
 
 	@SuppressWarnings("unchecked")
 	public Collection<ModelNode> getChildren() {

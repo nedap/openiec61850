@@ -103,7 +103,34 @@ public final class LogicalNode extends ModelNode {
 	public ModelNode getChild(String childName, Fc fc) {
 		if (fc != null) {
 			return fcDataObjects.get(fc).get(childName);
-		}
+		} else {
+            //search for ANY functionalconstraint. Who cares anyway!
+            for(Map<String, FcDataObject> object:fcDataObjects.values()) {
+                if(object.containsKey(childName)){
+                    return object.get(childName);
+                }
+            }
+        }
 		return null;
 	}
+
+    @Override
+    public ModelNode findChild(String[] objectReferenceTokens) {
+        if(objectReferenceTokens.length == 0) {
+            return this;
+        }
+        String[] nextTokens = super.stripFirstFromReference(objectReferenceTokens);
+        //search for ANY functionalconstraint. Who cares anyway!
+        for(Map<String, FcDataObject> object:fcDataObjects.values()) {
+           if(object.containsKey(objectReferenceTokens[0])){
+               ModelNode possibleResult = object.get(objectReferenceTokens[0]).findChild(nextTokens);
+               if(possibleResult != null) {
+                   return possibleResult;
+               }
+           }
+        }
+        return null;
+    }
+
+
 }

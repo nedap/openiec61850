@@ -55,7 +55,13 @@ public final class AARE_apdu {
 		this.code = code;
 	}
 
-	public AARE_apdu(BerBitString protocol_version, BerObjectIdentifier application_context_name, BerInteger result, Associate_source_diagnostic result_source_diagnostic, AP_title responding_AP_title, AE_qualifier responding_AE_qualifier, BerInteger responding_AP_invocation_identifier, BerInteger responding_AE_invocation_identifier, BerBitString responder_acse_requirements, BerObjectIdentifier mechanism_name, Authentication_value responding_authentication_value, Application_context_name_list application_context_name_list, BerGraphicString implementation_information, Association_information user_information) {
+	public AARE_apdu(BerBitString protocol_version, BerObjectIdentifier application_context_name, BerInteger result,
+            Associate_source_diagnostic result_source_diagnostic, AP_title responding_AP_title,
+            AE_qualifier responding_AE_qualifier, BerInteger responding_AP_invocation_identifier,
+            BerInteger responding_AE_invocation_identifier, BerBitString responder_acse_requirements,
+            BerObjectIdentifier mechanism_name, Authentication_value responding_authentication_value,
+            Application_context_name_list application_context_name_list, BerGraphicString implementation_information,
+            Association_information user_information) {
 		id = identifier;
 		this.protocol_version = protocol_version;
 		this.application_context_name = application_context_name;
@@ -91,82 +97,82 @@ public final class AARE_apdu {
 				codeLength += user_information.encode(berOStream, false);
 				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 30)).encode(berOStream);
 			}
-			
+
 			if (implementation_information != null) {
 				codeLength += implementation_information.encode(berOStream, false);
 				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 29)).encode(berOStream);
 			}
-			
+
 			if (application_context_name_list != null) {
 				codeLength += application_context_name_list.encode(berOStream, false);
 				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 11)).encode(berOStream);
 			}
-			
+
 			if (responding_authentication_value != null) {
 				sublength = responding_authentication_value.encode(berOStream, true);
 				codeLength += sublength;
 				codeLength += BerLength.encodeLength(berOStream, sublength);
 				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 10)).encode(berOStream);
 			}
-			
+
 			if (mechanism_name != null) {
 				codeLength += mechanism_name.encode(berOStream, false);
 				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 9)).encode(berOStream);
 			}
-			
+
 			if (responder_acse_requirements != null) {
 				codeLength += responder_acse_requirements.encode(berOStream, false);
 				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 8)).encode(berOStream);
 			}
-			
+
 			if (responding_AE_invocation_identifier != null) {
 				sublength = responding_AE_invocation_identifier.encode(berOStream, true);
 				codeLength += sublength;
 				codeLength += BerLength.encodeLength(berOStream, sublength);
 				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 7)).encode(berOStream);
 			}
-			
+
 			if (responding_AP_invocation_identifier != null) {
 				sublength = responding_AP_invocation_identifier.encode(berOStream, true);
 				codeLength += sublength;
 				codeLength += BerLength.encodeLength(berOStream, sublength);
 				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 6)).encode(berOStream);
 			}
-			
+
 			if (responding_AE_qualifier != null) {
 				sublength = responding_AE_qualifier.encode(berOStream, true);
 				codeLength += sublength;
 				codeLength += BerLength.encodeLength(berOStream, sublength);
 				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 5)).encode(berOStream);
 			}
-			
+
 			if (responding_AP_title != null) {
 				sublength = responding_AP_title.encode(berOStream, true);
 				codeLength += sublength;
 				codeLength += BerLength.encodeLength(berOStream, sublength);
 				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 4)).encode(berOStream);
 			}
-			
+
 			sublength = result_source_diagnostic.encode(berOStream, true);
 			codeLength += sublength;
 			codeLength += BerLength.encodeLength(berOStream, sublength);
 			codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 3)).encode(berOStream);
-			
+
 			sublength = result.encode(berOStream, true);
 			codeLength += sublength;
 			codeLength += BerLength.encodeLength(berOStream, sublength);
 			codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 2)).encode(berOStream);
-			
+
 			sublength = application_context_name.encode(berOStream, true);
 			codeLength += sublength;
 			codeLength += BerLength.encodeLength(berOStream, sublength);
 			codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 1)).encode(berOStream);
-			
+
 			if (protocol_version != null) {
 				codeLength += protocol_version.encode(berOStream, false);
 				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 0)).encode(berOStream);
 			}
-			
+
 			codeLength += BerLength.encodeLength(berOStream, codeLength);
 		}
 

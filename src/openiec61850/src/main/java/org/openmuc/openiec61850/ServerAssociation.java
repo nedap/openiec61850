@@ -1059,7 +1059,7 @@ final class ServerAssociation {
 		try {
 			fcModelNodeCopy.setValueFromMmsDataObj(mmsData);
 		} catch (ServiceError e) {
-			logger.warn("SetDataValues failed because of data missmatch.", e);
+			logger.warn("SetDataValues failed because of data mismatch.", e);
 			return new WriteResponse.SubChoice(new BerInteger(serviceErrorToMmsError(e)), null);
 		}
 

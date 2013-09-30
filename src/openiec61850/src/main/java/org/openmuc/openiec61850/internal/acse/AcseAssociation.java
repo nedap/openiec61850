@@ -104,7 +104,7 @@ public final class AcseAssociation {
 
 	/**
 	 * A server that got an Association Request Indication may use this function to accept the association.
-	 * 
+	 *
 	 * @param payload
 	 * @throws IOException
 	 */
@@ -123,7 +123,7 @@ public final class AcseAssociation {
 		Association_information userInformation = new Association_information(externalList);
 
 		AARE_apdu aare = new AARE_apdu(null, application_context_name, aareAccepted, associateSourceDiagnostic, null,
-				null, null, null, null, null, userInformation);
+				null, null, null, null, null, null, null, null, userInformation);
 
 		ACSE_apdu acse = new ACSE_apdu(null, aare, null, null);
 
@@ -237,7 +237,7 @@ public final class AcseAssociation {
 
 	/**
 	 * Starts an Application Association by sending an association request and waiting for an association accept message
-	 * 
+	 *
 	 * @param payload
 	 *            payload that can be sent with the association request
 	 * @param port
@@ -275,7 +275,7 @@ public final class AcseAssociation {
 			sender_acse_requirements = new BerBitString(new byte[] { (byte) 0x02, (byte) 0x07, (byte) 0x80 });
 			mechanism_name = default_mechanism_name;
 			authentication_value = new Authentication_value(new BerGraphicString(authenticationParameter.getBytes()),
-					null);
+					null, null);
 		}
 
 		AARQ_apdu aarq = new AARQ_apdu(null, application_context_name, called_ap_title,
@@ -344,7 +344,7 @@ public final class AcseAssociation {
 	/**
 	 * Starts a session layer connection, sends a CONNECT (CN), waits for a ACCEPT (AC) and throws an IOException if not
 	 * successful
-	 * 
+	 *
 	 * @throws IOException
 	 */
 	private ByteBuffer startSConnection(List<byte[]> ssduList, List<Integer> ssduOffsets, List<Integer> ssduLengths,
@@ -587,7 +587,7 @@ public final class AcseAssociation {
 	 * Listens for a new PDU and writes it into the given buffer. Decodes all ACSE and lower layer headers. The
 	 * resulting buffer's position points to the beginning of the ACSE SDU. The limit will point to the byte after the
 	 * last byte of the ACSE SDU.
-	 * 
+	 *
 	 * @param pduBuffer
 	 * @throws TimeoutException
 	 * @throws DecodingException

@@ -6,19 +6,15 @@ package org.openmuc.openiec61850.internal.acse.asn1;
 
 import java.io.IOException;
 import java.io.InputStream;
-
-import org.openmuc.jasn1.ber.BerByteArrayOutputStream;
-import org.openmuc.jasn1.ber.BerIdentifier;
-import org.openmuc.jasn1.ber.BerLength;
-import org.openmuc.jasn1.ber.types.BerBitString;
-import org.openmuc.jasn1.ber.types.BerInteger;
-import org.openmuc.jasn1.ber.types.BerObjectIdentifier;
-import org.openmuc.jasn1.ber.types.string.BerGraphicString;
+import java.util.List;
+import java.util.LinkedList;
+import org.openmuc.jasn1.ber.*;
+import org.openmuc.jasn1.ber.types.*;
+import org.openmuc.jasn1.ber.types.string.*;
 
 public final class AARQ_apdu {
 
-	public final static BerIdentifier identifier = new BerIdentifier(BerIdentifier.APPLICATION_CLASS,
-			BerIdentifier.CONSTRUCTED, 0);
+	public final static BerIdentifier identifier = new BerIdentifier(BerIdentifier.APPLICATION_CLASS, BerIdentifier.CONSTRUCTED, 0);
 	protected BerIdentifier id;
 
 	public byte[] code = null;
@@ -63,14 +59,7 @@ public final class AARQ_apdu {
 		this.code = code;
 	}
 
-	public AARQ_apdu(BerBitString protocol_version, BerObjectIdentifier application_context_name,
-			AP_title called_AP_title, AE_qualifier called_AE_qualifier, BerInteger called_AP_invocation_identifier,
-			BerInteger called_AE_invocation_identifier, AP_title calling_AP_title, AE_qualifier calling_AE_qualifier,
-			BerInteger calling_AP_invocation_identifier, BerInteger calling_AE_invocation_identifier,
-			BerBitString sender_acse_requirements, BerObjectIdentifier mechanism_name,
-			Authentication_value calling_authentication_value,
-			Application_context_name_list application_context_name_list, BerGraphicString implementation_information,
-			Association_information user_information) {
+	public AARQ_apdu(BerBitString protocol_version, BerObjectIdentifier application_context_name, AP_title called_AP_title, AE_qualifier called_AE_qualifier, BerInteger called_AP_invocation_identifier, BerInteger called_AE_invocation_identifier, AP_title calling_AP_title, AE_qualifier calling_AE_qualifier, BerInteger calling_AP_invocation_identifier, BerInteger calling_AE_invocation_identifier, BerBitString sender_acse_requirements, BerObjectIdentifier mechanism_name, Authentication_value calling_authentication_value, Application_context_name_list application_context_name_list, BerGraphicString implementation_information, Association_information user_information) {
 		id = identifier;
 		this.protocol_version = protocol_version;
 		this.application_context_name = application_context_name;
@@ -106,118 +95,102 @@ public final class AARQ_apdu {
 
 			if (user_information != null) {
 				codeLength += user_information.encode(berOStream, false);
-				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 30))
-						.encode(berOStream);
+				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 30)).encode(berOStream);
 			}
-
+			
 			if (implementation_information != null) {
 				codeLength += implementation_information.encode(berOStream, false);
-				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 29))
-						.encode(berOStream);
+				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 29)).encode(berOStream);
 			}
-
+			
 			if (application_context_name_list != null) {
 				codeLength += application_context_name_list.encode(berOStream, false);
-				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 13))
-						.encode(berOStream);
+				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 13)).encode(berOStream);
 			}
-
+			
 			if (calling_authentication_value != null) {
 				sublength = calling_authentication_value.encode(berOStream, true);
 				codeLength += sublength;
 				codeLength += BerLength.encodeLength(berOStream, sublength);
-				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 12))
-						.encode(berOStream);
+				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 12)).encode(berOStream);
 			}
-
+			
 			if (mechanism_name != null) {
 				codeLength += mechanism_name.encode(berOStream, false);
-				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 11))
-						.encode(berOStream);
+				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 11)).encode(berOStream);
 			}
-
+			
 			if (sender_acse_requirements != null) {
 				codeLength += sender_acse_requirements.encode(berOStream, false);
-				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 10))
-						.encode(berOStream);
+				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 10)).encode(berOStream);
 			}
-
+			
 			if (calling_AE_invocation_identifier != null) {
 				sublength = calling_AE_invocation_identifier.encode(berOStream, true);
 				codeLength += sublength;
 				codeLength += BerLength.encodeLength(berOStream, sublength);
-				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 9))
-						.encode(berOStream);
+				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 9)).encode(berOStream);
 			}
-
+			
 			if (calling_AP_invocation_identifier != null) {
 				sublength = calling_AP_invocation_identifier.encode(berOStream, true);
 				codeLength += sublength;
 				codeLength += BerLength.encodeLength(berOStream, sublength);
-				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 8))
-						.encode(berOStream);
+				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 8)).encode(berOStream);
 			}
-
+			
 			if (calling_AE_qualifier != null) {
 				sublength = calling_AE_qualifier.encode(berOStream, true);
 				codeLength += sublength;
 				codeLength += BerLength.encodeLength(berOStream, sublength);
-				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 7))
-						.encode(berOStream);
+				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 7)).encode(berOStream);
 			}
-
+			
 			if (calling_AP_title != null) {
 				sublength = calling_AP_title.encode(berOStream, true);
 				codeLength += sublength;
 				codeLength += BerLength.encodeLength(berOStream, sublength);
-				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 6))
-						.encode(berOStream);
+				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 6)).encode(berOStream);
 			}
-
+			
 			if (called_AE_invocation_identifier != null) {
 				sublength = called_AE_invocation_identifier.encode(berOStream, true);
 				codeLength += sublength;
 				codeLength += BerLength.encodeLength(berOStream, sublength);
-				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 5))
-						.encode(berOStream);
+				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 5)).encode(berOStream);
 			}
-
+			
 			if (called_AP_invocation_identifier != null) {
 				sublength = called_AP_invocation_identifier.encode(berOStream, true);
 				codeLength += sublength;
 				codeLength += BerLength.encodeLength(berOStream, sublength);
-				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 4))
-						.encode(berOStream);
+				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 4)).encode(berOStream);
 			}
-
+			
 			if (called_AE_qualifier != null) {
 				sublength = called_AE_qualifier.encode(berOStream, true);
 				codeLength += sublength;
 				codeLength += BerLength.encodeLength(berOStream, sublength);
-				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 3))
-						.encode(berOStream);
+				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 3)).encode(berOStream);
 			}
-
+			
 			if (called_AP_title != null) {
 				sublength = called_AP_title.encode(berOStream, true);
 				codeLength += sublength;
 				codeLength += BerLength.encodeLength(berOStream, sublength);
-				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 2))
-						.encode(berOStream);
+				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 2)).encode(berOStream);
 			}
-
+			
 			sublength = application_context_name.encode(berOStream, true);
 			codeLength += sublength;
 			codeLength += BerLength.encodeLength(berOStream, sublength);
-			codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 1))
-					.encode(berOStream);
-
+			codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 1)).encode(berOStream);
+			
 			if (protocol_version != null) {
 				codeLength += protocol_version.encode(berOStream, false);
-				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 0))
-						.encode(berOStream);
+				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 0)).encode(berOStream);
 			}
-
+			
 			codeLength += BerLength.encodeLength(berOStream, codeLength);
 		}
 
@@ -462,3 +435,4 @@ public final class AARQ_apdu {
 		code = berOStream.getArray();
 	}
 }
+

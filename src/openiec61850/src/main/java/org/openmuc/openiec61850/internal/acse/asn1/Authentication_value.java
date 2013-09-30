@@ -6,11 +6,11 @@ package org.openmuc.openiec61850.internal.acse.asn1;
 
 import java.io.IOException;
 import java.io.InputStream;
-
-import org.openmuc.jasn1.ber.BerByteArrayOutputStream;
-import org.openmuc.jasn1.ber.BerIdentifier;
-import org.openmuc.jasn1.ber.types.BerBitString;
-import org.openmuc.jasn1.ber.types.string.BerGraphicString;
+import java.util.List;
+import java.util.LinkedList;
+import org.openmuc.jasn1.ber.*;
+import org.openmuc.jasn1.ber.types.*;
+import org.openmuc.jasn1.ber.types.string.*;
 
 public final class Authentication_value {
 
@@ -19,6 +19,8 @@ public final class Authentication_value {
 
 	public BerBitString bitstring = null;
 
+	public Myexternal external = null;
+
 	public Authentication_value() {
 	}
 
@@ -26,9 +28,10 @@ public final class Authentication_value {
 		this.code = code;
 	}
 
-	public Authentication_value(BerGraphicString charstring, BerBitString bitstring) {
+	public Authentication_value(BerGraphicString charstring, BerBitString bitstring, Myexternal external) {
 		this.charstring = charstring;
 		this.bitstring = bitstring;
+		this.external = external;
 	}
 
 	public int encode(BerByteArrayOutputStream berOStream, boolean explicit) throws IOException {
@@ -40,27 +43,33 @@ public final class Authentication_value {
 
 		}
 		int codeLength = 0;
+		if (external != null) {
+			codeLength += external.encode(berOStream, false);
+			codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 2)).encode(berOStream);
+			return codeLength;
+
+		}
+		
 		if (bitstring != null) {
 			codeLength += bitstring.encode(berOStream, false);
-			codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 1))
-					.encode(berOStream);
+			codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 1)).encode(berOStream);
 			return codeLength;
 
 		}
-
+		
 		if (charstring != null) {
 			codeLength += charstring.encode(berOStream, false);
-			codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 0))
-					.encode(berOStream);
+			codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 0)).encode(berOStream);
 			return codeLength;
 
 		}
-
+		
 		throw new IOException("Error encoding BerChoice: No item in choice was selected.");
 	}
 
 	public int decode(InputStream iStream, BerIdentifier berIdentifier) throws IOException {
 		int codeLength = 0;
+		int choiceDecodeLength = 0;
 		BerIdentifier passedIdentifier = berIdentifier;
 		if (berIdentifier == null) {
 			berIdentifier = new BerIdentifier();
@@ -78,6 +87,12 @@ public final class Authentication_value {
 			return codeLength;
 		}
 
+		if (berIdentifier.equals(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 2)) {
+			external = new Myexternal();
+			codeLength += external.decode(iStream, false);
+			return codeLength;
+		}
+
 		if (passedIdentifier != null) {
 			return 0;
 		}
@@ -90,3 +105,4 @@ public final class Authentication_value {
 		code = berOStream.getArray();
 	}
 }
+

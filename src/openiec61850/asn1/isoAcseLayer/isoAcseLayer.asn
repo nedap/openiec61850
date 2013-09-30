@@ -69,12 +69,11 @@ AARE_apdu ::= [APPLICATION 1] IMPLICIT SEQUENCE {
   responding_AP_invocation_identifier  [6] EXPLICIT AP_invocation_identifier OPTIONAL,
   responding_AE_invocation_identifier  [7] EXPLICIT AE_invocation_identifier OPTIONAL,
   --  The following field shall not be present if only the Kernel is used.
---  responder_acse_requirements          [8] IMPLICIT ACSE_requirements OPTIONAL,
+  responder_acse_requirements          [8] IMPLICIT ACSE_requirements OPTIONAL,
   --  The following field shall only be present if the Authentication functional unit is selected.
---  mechanism_name                       [9] IMPLICIT Mechanism_name OPTIONAL,
+  mechanism_name                       [9] IMPLICIT Mechanism_name OPTIONAL,
   --  This following field shall only be present if the Authentication functional unit is selected.
---  responding_authentication_value
---    [10] EXPLICIT Authentication_value OPTIONAL,
+  responding_authentication_value       [10] EXPLICIT Authentication_value OPTIONAL,
   application_context_name_list
     [11] IMPLICIT Application_context_name_list OPTIONAL,
   --  The above field shall only be present if the Application Context Negotiation functional unit is selected
@@ -225,8 +224,8 @@ Myexternal  ::=  [UNIVERSAL 8] IMPLICIT SEQUENCE
 --is optional:
 Authentication_value ::= CHOICE {
   charstring  [0] IMPLICIT GraphicString,
-  bitstring   [1] IMPLICIT BIT STRING
---  external    [2] IMPLICIT Myexternal,
+  bitstring   [1] IMPLICIT BIT STRING,
+  external    [2] IMPLICIT Myexternal
 --   other
 --    [3] IMPLICIT SEQUENCE {other_mechanism_name
 --                              MECHANISM_NAME.&id({ObjectSet}),
@@ -259,6 +258,27 @@ Release_response_reason ::= INTEGER {
  user_defined (30)
 }
 
+-- STASE-MMS-Authentication-value {iso member-body usa(840) ansi-t1-259-1997(0) stase(1) stase-authentication-value(0) abstractSyntax(1) version1(1)}
+
+-- DEFINITIONS IMPLICIT TAGS::= BEGIN
+-- EXPORTS everything
+-- IMPORTS
+
+-- SenderId, ReceiverId, Signature, SignatureCertificate
+
+-- FROM ST-CMIP-PCI {iso member-body usa(840) ansi-t1-259-1997(0) stase(1) stase- pci(1) abstractSyntax(4) version1(1)};
+
+MMS_TLS_Authentication-value::= CHOICE{
+  certificate-based [0] IMPLICIT SEQUENCE {
+  authentication-Certificate [0] IMPLICIT SignatureCertificate,
+  time [1] IMPLICIT GeneralizedTime,
+  signature [2] IMPLICIT SignedValue }
+
+}
+
+SignatureCertificate::= OCTET STRING -- size shall have a minimum-maximum size of 8192 octets.
+
+SignedValue ::= OCTET STRING
 
 
 END

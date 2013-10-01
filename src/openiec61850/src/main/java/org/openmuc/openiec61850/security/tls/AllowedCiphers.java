@@ -1,4 +1,4 @@
-package org.openmuc.openiec61850.server.security.tls;
+package org.openmuc.openiec61850.security.tls;
 
 import java.util.Arrays;
 import java.util.HashSet;

@@ -38,8 +38,8 @@ import com.lambdaworks.crypto.SCryptUtil;
 import java.io.EOFException;
 import javax.net.ServerSocketFactory;
 import org.openmuc.openiec61850.server.security.ScryptPasswordAuthenticator;
-import org.openmuc.openiec61850.server.security.tls.TlsServerSocketFactory;
-import org.openmuc.openiec61850.server.security.tls.TlsSocketFactory;
+import org.openmuc.openiec61850.security.tls.TlsServerSocketFactory;
+import org.openmuc.openiec61850.security.tls.TlsSocketFactory;
 
 /**
  *

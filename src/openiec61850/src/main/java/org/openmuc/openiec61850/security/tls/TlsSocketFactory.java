@@ -2,7 +2,7 @@
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
  */
-package org.openmuc.openiec61850.server.security.tls;
+package org.openmuc.openiec61850.security.tls;
 
 import java.io.File;
 import java.io.FileInputStream;

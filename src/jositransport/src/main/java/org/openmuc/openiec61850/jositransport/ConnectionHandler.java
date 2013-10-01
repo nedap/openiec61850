@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 /**
  * The class extends Thread and handles ISO Transport connections. Once a connection has been initiated (CR,CC) it gives
  * the connection in form of the Connection class to the ConnectionListener.
- * 
+ *
  */
 public final class ConnectionHandler implements Runnable {
 
@@ -51,13 +51,13 @@ public final class ConnectionHandler implements Runnable {
 				tConnection = new TConnection(socket, serverThread.maxTPDUSizeParam, serverThread.messageTimeout,
 						serverThread.messageFragmentTimeout);
 			} catch (IOException e) {
-				logger.warn("Exception occured when someone tried to connect: " + e.getMessage());
+				logger.warn("Exception occured when someone tried to connect: " + e.getMessage(), e);
 				return;
 			}
 			try {
 				tConnection.listenForCR();
 			} catch (IOException e) {
-				logger.warn("Exception occured when someone tried to connect. Server was listening for ISO Transport CR packet.");
+				logger.warn("Exception occured when someone tried to connect. Server was listening for ISO Transport CR packet: {}", e.getMessage());
 				tConnection.close();
 				return;
 			}

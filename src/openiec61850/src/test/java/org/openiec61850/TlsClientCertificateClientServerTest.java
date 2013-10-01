@@ -45,7 +45,7 @@ import org.openmuc.openiec61850.security.tls.TlsSocketFactory;
  *
  * @author pieter.bos
  */
-public class TlsClientServerTest {
+public class TlsClientCertificateClientServerTest {
 
     private static final String SERVER_KEYSTORE = "serverKeyStore.jks";
     private static final String SERVER_KEYSTOREPASSWORD = "keystorePassword";
@@ -60,6 +60,9 @@ public class TlsClientServerTest {
     private static final String SERVER_TRUSTSTORE = "serverTrustStore.jks";
     private static final String SERVER_TRUSTSTOREPASSWORD = "truststorepassword";
 
+    //truststore with wrong certificate
+    private static final String SERVER_WRONGTRUSTSTORE = "wrongServerTrustStore.jks";
+
     private static final int PORT_NUMBER = 56472;
 
     ServerSap serverSap;
@@ -70,11 +73,12 @@ public class TlsClientServerTest {
 
     @Before
     public void setup() throws Exception {
-        InputStream stream= getClass().getResourceAsStream("/testServer.icd");
+        InputStream stream = getClass().getResourceAsStream("/testServer.icd");
         List<ServerSap> serverSapList = ServerSap.getSapsFromSclFile(stream);
         stream.close();
 
-        TlsServerSocketFactory serverSocketFactory = new TlsServerSocketFactory(getClass().getResourceAsStream("/" + SERVER_KEYSTORE), SERVER_KEYSTOREPASSWORD);
+        TlsServerSocketFactory serverSocketFactory = new TlsServerSocketFactory(getClass().getResourceAsStream("/" + SERVER_KEYSTORE), SERVER_KEYSTOREPASSWORD,
+                getClass().getResourceAsStream("/" + SERVER_TRUSTSTORE), SERVER_TRUSTSTOREPASSWORD);
 
         serverSap = serverSapList.get(0);
         //construct with serversocketfactory
@@ -83,9 +87,10 @@ public class TlsClientServerTest {
 
         serverSap.setPort(PORT_NUMBER);//todo: find a free port
         serverSap.setBindAddress(InetAddress.getLocalHost());
-        serverSap.startListening(new TlsClientServerTest.TlsTestStopListener(), new TlsClientServerTest.TlsTestWriteListener());
+        serverSap.startListening(new TlsTestStopListener(), new TlsTestWriteListener());
 
-        TlsSocketFactory socketFactory = new TlsSocketFactory(getClass().getResourceAsStream("/" + CLIENT_TRUSTSTORE), CLIENT_TRUSTSTOREPASSWORD);
+        TlsSocketFactory socketFactory = new TlsSocketFactory(getClass().getResourceAsStream("/" + CLIENT_TRUSTSTORE), CLIENT_TRUSTSTOREPASSWORD
+                ,getClass().getResourceAsStream("/" + CLIENT_KEYSTORE), CLIENT_KEYSTOREPASSWORD);
         clientSap = new ClientSap(socketFactory);
 
         writtenAttributes = new ArrayList<BasicDataAttribute>();
@@ -98,6 +103,26 @@ public class TlsClientServerTest {
             clientAssociation.close();
         }
     }
+
+    @Test(expected=javax.net.ssl.SSLHandshakeException.class)
+    public void testWrongClientCertificate() throws Exception {
+        serverSap.stop();
+
+        //construct serversocket factory with a truststore that does not contain the client certificate
+        //connection should fail
+        TlsServerSocketFactory serverSocketFactory = new TlsServerSocketFactory(getClass().getResourceAsStream("/" + SERVER_KEYSTORE), SERVER_KEYSTOREPASSWORD,
+                getClass().getResourceAsStream("/" + SERVER_WRONGTRUSTSTORE), SERVER_TRUSTSTOREPASSWORD);
+
+        //construct with serversocketfactory
+        serverSap = new ServerSap(PORT_NUMBER, 10, InetAddress.getLocalHost(), serverSap.getModelCopy(), "TestSap",
+			serverSocketFactory);
+
+        serverSap.setPort(PORT_NUMBER);//todo: find a free port
+        serverSap.setBindAddress(InetAddress.getLocalHost());
+        serverSap.startListening(new TlsTestStopListener(), new TlsTestWriteListener());
+        this.associateClient();
+    }
+
 
     @Test
     public void testClientServerGetModel() throws Exception {

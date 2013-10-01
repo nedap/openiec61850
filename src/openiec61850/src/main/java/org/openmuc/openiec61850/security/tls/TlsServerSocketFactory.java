@@ -1,7 +1,6 @@
 
 package org.openmuc.openiec61850.security.tls;
 
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -24,6 +23,8 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -43,25 +44,70 @@ public class TlsServerSocketFactory extends SSLServerSocketFactory {
     private SSLServerSocketFactory defaultFactory;
 
     private KeyManagerFactory kmf;
+    private TrustManagerFactory tmf;
 
 
     private SSLServerSocketFactory getOriginalDefault() {
         return defaultFactory;
     }
 
+    /**
+     * Create a socket factory that does TLS with the given keystore file and password.
+     *
+     * No client certificate wanted or needed.
+     * @param keystore the keystore path
+     * @param keystorePassword the keystore password
+     */
     public TlsServerSocketFactory(String keystore, String keystorePassword) {
         try {
-            init(new FileInputStream(new File(keystore)), keystorePassword);
+            init(new FileInputStream(new File(keystore)), keystorePassword, null, null);
         } catch (FileNotFoundException ex) {
             throw new RuntimeException(ex);
         }
     }
 
+    /**
+     * Create a socket factory that does TLS with the given keystore file and password.
+     *
+     * No client certificate wanted or needed.
+     * @param keystore the keystore inputstream
+     * @param keystorePassword the keystore password
+     */
     public TlsServerSocketFactory(InputStream inputStream, String keystorePassword) {
-        init(inputStream, keystorePassword);
+        init(inputStream, keystorePassword, null, null);
     }
 
-    private void init(InputStream inputStream, String keyStorePassword) {
+    /**
+     * Create a socket factory that does TLS with client certificates with the given keystore file and password.
+     *
+     * Client certificates needed
+     * @param keystore the keystore inputstream
+     * @param keystorePassword the keystore password
+     */
+    public TlsServerSocketFactory(InputStream keystore, String keystorePassword,
+            InputStream trustStore, String trustStorePassword) {
+        init(keystore, keystorePassword, trustStore, trustStorePassword);
+    }
+
+    /**
+     * Create a socket factory that does TLS with client certificates with the given keystore file and password.
+     *
+     * Client certificates needed
+     * @param keystore the keystore inputstream
+     * @param keystorePassword the keystore password
+     */
+    public TlsServerSocketFactory(String keystore, String keystorePassword,
+            String trustStore, String trustStorePassword) {
+        try {
+            init(new FileInputStream(new File(keystore)), keystorePassword,
+                    new FileInputStream(new File(trustStore)), trustStorePassword);
+        } catch (FileNotFoundException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    private void init(InputStream inputStream, String keyStorePassword,
+            InputStream trustStore, String trustStorePassword) {
         try {
 
             try {
@@ -71,14 +117,21 @@ public class TlsServerSocketFactory extends SSLServerSocketFactory {
             }
 
             KeyStore key = KeyStore.getInstance(KeyStore.getDefaultType());
-
             key.load(inputStream, keyStorePassword.toCharArray());
-
             // Set up key manager factory to use our key store
             kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
             kmf.init(key, keyStorePassword.toCharArray());
+
+            TrustManager[] trustManagers = null;
+            if(trustStore != null) {
+                KeyStore trust = KeyStore.getInstance(KeyStore.getDefaultType());
+                trust.load(trustStore, trustStorePassword.toCharArray());
+                tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+                tmf.init(trust);
+                trustManagers = tmf.getTrustManagers();
+            }
             try {
-                sslContext.init(kmf.getKeyManagers(), null, null);//TODO: implement a trustmanager which accepts ALL client certificates
+                sslContext.init(kmf.getKeyManagers(), trustManagers, null);//TODO: implement a trustmanager which accepts ALL client certificates
             } catch (KeyManagementException ex) {
                 throw new RuntimeException(ex);
             }
@@ -90,6 +143,10 @@ public class TlsServerSocketFactory extends SSLServerSocketFactory {
 
             //then according to IEC 62351 we can allow or disallow the connection after the ACSE AARQ.
             defaultFactory = sslContext.getServerSocketFactory();
+
+            if(trustStore != null) {
+                parameters.setNeedClientAuth(true);
+            }
 
             parameters.setCipherSuites(AllowedCiphers.supportedCipherSuites(engine.getSupportedCipherSuites()));
             parameters.setProtocols(supportedProtocols);

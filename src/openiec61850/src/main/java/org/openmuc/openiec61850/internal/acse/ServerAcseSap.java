@@ -62,7 +62,7 @@ public final class ServerAcseSap implements TConnectionListener {
 
 	/**
 	 * Use this constructor to create a server ACSE SAP that listens on a fixed port.
-	 * 
+	 *
 	 * @param associationListener
 	 *            the AssociationListener that will be notified when remote clients have associated. Once constructed
 	 *            the AcseSAP contains a public TSAP that can be accessed to set its configuration.
@@ -70,12 +70,12 @@ public final class ServerAcseSap implements TConnectionListener {
 	public ServerAcseSap(int port, int backlog, InetAddress bindAddr, AcseAssociationListener associationListener,
 			ServerSocketFactory serverSocketFactory) {
 		this.associationListener = associationListener;
-		serverTSap = new ServerTSap(port, backlog, bindAddr, this);
+		serverTSap = new ServerTSap(port, backlog, bindAddr, this, serverSocketFactory);
 	}
 
 	/**
 	 * Start listening for incoming connections. Only for server SAPs.
-	 * 
+	 *
 	 * @throws IOException
 	 */
 	public void startListening() throws IOException {

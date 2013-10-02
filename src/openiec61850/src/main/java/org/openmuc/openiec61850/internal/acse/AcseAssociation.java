@@ -25,14 +25,34 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.security.KeyStore;
+import java.security.KeyStore.Entry;
+import java.security.KeyStore.PrivateKeyEntry;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.Signature;
+import java.security.SignatureException;
+import java.security.UnrecoverableEntryException;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateEncodingException;
+import java.security.cert.X509Certificate;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.openmuc.jasn1.ber.BerByteArrayOutputStream;
 import org.openmuc.jasn1.ber.types.BerAny;
 import org.openmuc.jasn1.ber.types.BerBitString;
+import org.openmuc.jasn1.ber.types.BerGeneralizedTime;
 import org.openmuc.jasn1.ber.types.BerInteger;
 import org.openmuc.jasn1.ber.types.BerObjectIdentifier;
 import org.openmuc.jasn1.ber.types.BerOctetString;
@@ -45,6 +65,7 @@ import org.openmuc.openiec61850.internal.acse.asn1.AP_title;
 import org.openmuc.openiec61850.internal.acse.asn1.Associate_source_diagnostic;
 import org.openmuc.openiec61850.internal.acse.asn1.Association_information;
 import org.openmuc.openiec61850.internal.acse.asn1.Authentication_value;
+import org.openmuc.openiec61850.internal.acse.asn1.MMS_TLS_Authentication_value;
 import org.openmuc.openiec61850.internal.acse.asn1.Myexternal;
 import org.openmuc.openiec61850.internal.presentation.asn1.CPA_PPDU;
 import org.openmuc.openiec61850.internal.presentation.asn1.CP_type;
@@ -245,8 +266,39 @@ public final class AcseAssociation {
 	 * @param tSAP
 	 * @throws IOException
 	 */
-	void startAssociation(ByteBuffer payload, InetAddress address, int port, InetAddress localAddr, int localPort,
+	public void startAssociation(ByteBuffer payload, InetAddress address, int port, InetAddress localAddr, int localPort,
 			String authenticationParameter, byte[] pSelRemote, ClientTSap tSAP) throws IOException {
+        startAssociation(payload, address, port, localAddr, localPort, authenticationParameter, null, null, pSelRemote, tSAP);
+    }
+
+     /**
+	 * Starts an Application Association by sending an association request and waiting for an association accept message
+	 *
+	 * @param payload
+	 *            payload that can be sent with the association request
+	 * @param port
+	 * @param address
+	 * @param tSAP
+	 * @throws IOException
+	 */
+	public void startAssociation(ByteBuffer payload, InetAddress address, int port, InetAddress localAddr, int localPort,
+			KeyStore keyStore, String keystorePassword, byte[] pSelRemote, ClientTSap tSAP) throws IOException {
+        startAssociation(payload, address, port, localAddr, localPort, null, keyStore, keystorePassword, pSelRemote, tSAP);
+    }
+
+/**
+	 * Starts an Application Association by sending an association request and waiting for an association accept message
+	 *
+	 * @param payload
+	 *            payload that can be sent with the association request
+	 * @param port
+	 * @param address
+	 * @param tSAP
+	 * @throws IOException
+	 */
+	private void startAssociation(ByteBuffer payload, InetAddress address, int port, InetAddress localAddr, int localPort,
+			String authenticationParameter, KeyStore keystore, String keystorePassword, byte[] pSelRemote, ClientTSap tSAP) throws IOException {
+
 		if (connected == true) {
 			throw new IOException();
 		}
@@ -271,7 +323,51 @@ public final class AcseAssociation {
 		BerBitString sender_acse_requirements = null;
 		BerObjectIdentifier mechanism_name = null;
 		Authentication_value authentication_value = null;
-		if (authenticationParameter != null) {
+        if(keystore != null) {
+            try {
+                //sign AARQ with 62351-4
+                //TODO: check the sender ACSE requirements
+                sender_acse_requirements = new BerBitString(new byte[] { (byte) 0x02, (byte) 0x07, (byte) 0x80 });
+                mechanism_name = default_mechanism_name;//TODO! correct mechanism name
+                PrivateKeyEntry privateKeyEntry = null;
+
+                try{
+                     privateKeyEntry = getRSAPrivateKeyEntry(keystore, keystorePassword);
+                } catch (KeyStoreException ex) {
+                     throw new RuntimeException("error accessing keystore: ", ex);
+                }
+
+                if(privateKeyEntry == null) {
+                    throw new IllegalArgumentException("keystore contains no private RSA key to use, or no X509Certificate. We need both.");
+                }
+
+                Signature signature = Signature.getInstance("SHA1withRSA");
+                signature.initSign(privateKeyEntry.getPrivateKey());
+
+                SimpleDateFormat generalizedTimeFormat = new SimpleDateFormat("yyyyMMddHHmmss.SSSZ");
+                byte[] generalizedTime = generalizedTimeFormat.format(new Date()).getBytes();
+                BerGeneralizedTime time = new BerGeneralizedTime(generalizedTime);
+                signature.update(generalizedTime);
+                BerOctetString berSignature = new BerOctetString(signature.sign());
+                BerOctetString certificate = new BerOctetString(privateKeyEntry.getCertificate().getEncoded());
+
+                MMS_TLS_Authentication_value.SubSeq_certificate_based certBased =
+                        new MMS_TLS_Authentication_value.SubSeq_certificate_based(certificate, time, berSignature);
+                MMS_TLS_Authentication_value authValue = new MMS_TLS_Authentication_value(certBased);
+                Myexternal.SubChoice_encoding octetEncoding = new Myexternal.SubChoice_encoding(authValue, null, null);
+
+                Myexternal external = new Myexternal(null, null, octetEncoding);
+                authentication_value = new Authentication_value(null, null, external);
+            } catch (NoSuchAlgorithmException ex) {
+                throw new IllegalArgumentException("no PKCS#1 algorithm present in your JDK. Please add a security provider: " + ex.getMessage());
+            } catch (InvalidKeyException ex) {
+                throw new IllegalArgumentException("Illegal key specified: " +  ex.getMessage());
+            } catch (SignatureException ex) {
+                throw new IllegalArgumentException("Problem signing : " +  ex.getMessage());
+            } catch (CertificateEncodingException ex) {
+                throw new IllegalArgumentException("Problem encoding X.509 certificate : " +  ex.getMessage());
+            }
+        } else if (authenticationParameter != null) {
 			sender_acse_requirements = new BerBitString(new byte[] { (byte) 0x02, (byte) 0x07, (byte) 0x80 });
 			mechanism_name = default_mechanism_name;
 			authentication_value = new Authentication_value(new BerGraphicString(authenticationParameter.getBytes()),
@@ -312,8 +408,34 @@ public final class AcseAssociation {
 		res = startSConnection(ssduList, ssduOffsets, ssduLengths, address, port, localAddr, localPort, tSAP);
 
 		associateResponseAPDU = AcseAssociation.decodePConResponse(res);
-
 	}
+
+    private PrivateKeyEntry getRSAPrivateKeyEntry(KeyStore keyStore, String keystorePassword) throws KeyStoreException {
+
+        KeyStore.ProtectionParameter protParam = new KeyStore.PasswordProtection(keystorePassword.toCharArray());
+
+        Enumeration<String> aliases = keyStore.aliases();
+        while(aliases.hasMoreElements()) {
+            String alias = aliases.nextElement();
+            if(keyStore.isKeyEntry(alias)) {
+                try {
+                    Entry entry = keyStore.getEntry(alias, protParam);
+                    if(entry instanceof PrivateKeyEntry) {
+                        PrivateKeyEntry privateKeyEntry = (PrivateKeyEntry) entry;
+                        PrivateKey privateKey = privateKeyEntry.getPrivateKey();
+                        if(privateKey.getAlgorithm().equalsIgnoreCase("RSA") && privateKeyEntry.getCertificate() instanceof X509Certificate) {
+                            return privateKeyEntry;
+                        }
+                    }
+                } catch (NoSuchAlgorithmException ex) {
+                   //TODO: log. not important, just means we have keys we cannot use
+                } catch (UnrecoverableEntryException ex) {
+                   //TODO: log. not important, just means we have an entry we cannot use
+                }
+            }
+        }
+        return null;
+    }
 
 	private static ByteBuffer decodePConResponse(ByteBuffer ppdu) throws IOException {
 

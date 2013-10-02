@@ -23,6 +23,7 @@ package org.openmuc.openiec61850;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
+import java.security.KeyStore;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -86,7 +87,7 @@ import org.openmuc.openiec61850.internal.mms.asn1.WriteResponse;
  * that not all ACSI services have a corresponding function in this API. For example all GetDirectory and GetDefinition
  * services are covered by <code>retrieveModel</code>. The control services can be executed by using getDataValues and
  * setDataValues on the control objects in the data model.
- * 
+ *
  */
 public final class ClientAssociation {
 
@@ -133,11 +134,34 @@ public final class ClientAssociation {
 		clientReceiver.start();
 	}
 
+    ClientAssociation(InetAddress address, int port, InetAddress localAddr, int localPort,
+        KeyStore keyStore, String keystorePassword, ClientAcseSap acseSap, int proposedMaxMmsPduSize,
+        int proposedMaxServOutstandingCalling, int proposedMaxServOutstandingCalled,
+        int proposedDataStructureNestingLevel, byte[] servicesSupportedCalling, int responseTimeout,
+        int messageFragmentTimeout) throws IOException {
+
+		this.responseTimeout = responseTimeout;
+
+		acseSap.tSap.setMessageFragmentTimeout(messageFragmentTimeout);
+		acseSap.tSap.setMessageTimeout(responseTimeout);
+
+		negotiatedMaxPduSize = proposedMaxMmsPduSize;
+
+		associate(address, port, localAddr, localPort, keyStore, keystorePassword, acseSap, proposedMaxMmsPduSize,
+				proposedMaxServOutstandingCalling, proposedMaxServOutstandingCalled, proposedDataStructureNestingLevel,
+				servicesSupportedCalling);
+
+		acseAssociation.setMessageTimeout(0);
+
+		clientReceiver = new ClientReceiver(acseAssociation, incomingResponses, incomingReports, negotiatedMaxPduSize);
+		clientReceiver.start();
+	}
+
 	/**
 	 * Sets the response timeout. The response timeout is used whenever a request is sent to the server. The client will
 	 * wait for this amount of time for the server's response before throwing a ServiceError.TIMEOUT. Responses received
 	 * after the timeout will be automatically discarded.
-	 * 
+	 *
 	 * @param timeout
 	 *            the response timeout in milliseconds.
 	 */
@@ -149,7 +173,7 @@ public final class ClientAssociation {
 	 * Gets the response timeout. The response timeout is used whenever a request is sent to the server. The client will
 	 * wait for this amount of time for the server's response before throwing a ServiceError.TIMEOUT. Responses received
 	 * after the timeout will be automatically discarded.
-	 * 
+	 *
 	 * @return the response timeout in milliseconds.
 	 */
 	public int getResponseTimeout() {
@@ -388,6 +412,37 @@ public final class ClientAssociation {
 		}
 	}
 
+    private void associate(InetAddress address, int port, InetAddress localAddr, int localPort,
+			KeyStore keyStore, String keystorePassword, ClientAcseSap acseSap, int proposedMaxPduSize,
+			int proposedMaxServOutstandingCalling, int proposedMaxServOutstandingCalled,
+			int proposedDataStructureNestingLevel, byte[] servicesSupportedCalling) throws IOException {
+
+		MmsPdu initiateRequestMMSpdu = constructInitRequestPdu(proposedMaxPduSize, proposedMaxServOutstandingCalling,
+				proposedMaxServOutstandingCalled, proposedDataStructureNestingLevel, servicesSupportedCalling);
+
+		BerByteArrayOutputStream berOStream = new BerByteArrayOutputStream(500, true);
+		initiateRequestMMSpdu.encode(berOStream, true);
+
+		try {
+			acseAssociation = acseSap.associate(address, port, localAddr, localPort, keyStore, keystorePassword,
+					berOStream.getByteBuffer());
+
+			ByteBuffer initResponse = acseAssociation.getAssociateResponseAPdu();
+
+			MmsPdu initiateResponseMmsPdu = new MmsPdu();
+
+			initiateResponseMmsPdu.decode(new ByteBufferInputStream(initResponse), null);
+
+			handleInitiateResponse(initiateResponseMmsPdu, proposedMaxPduSize, proposedMaxServOutstandingCalling,
+					proposedMaxServOutstandingCalled, proposedDataStructureNestingLevel);
+		} catch (IOException e) {
+			if (acseAssociation != null) {
+				acseAssociation.close();
+			}
+			throw e;
+		}
+	}
+
 	private static MmsPdu constructInitRequestPdu(int proposedMaxPduSize, int proposedMaxServOutstandingCalling,
 			int proposedMaxServOutstandingCalled, int proposedDataStructureNestingLevel, byte[] servicesSupportedCalling) {
 
@@ -458,7 +513,7 @@ public final class ClientAssociation {
 	/**
 	 * Parses the given SCL File and returns the server model that is described by it. This function can be used instead
 	 * of <code>retrieveModel</code> in order to the server model that is needed to call the other ACSI services.
-	 * 
+	 *
 	 * @param sclFilePath
 	 *            the path to the SCL file that is to be parsed.
 	 * @return The ServerNode that is the root node of the complete server model.
@@ -478,7 +533,7 @@ public final class ClientAssociation {
 	 * Triggers all GetDirectory and GetDefinition ACSI services needed to get the complete server model. Because in MMS
 	 * SubDataObjects cannot be distinguished from Constructed Data Attributes they will always be represented as
 	 * Constructed Data Attributes in the returned model.
-	 * 
+	 *
 	 * @return the ServerModel that is the root node of the complete server model.
 	 * @throws ServiceError
 	 *             if a ServiceError occurs while calling any of the ASCI services.
@@ -658,7 +713,7 @@ public final class ClientAssociation {
 	 * After a successful return, the Basic Data Attributes of the passed model node will contain the values read. If
 	 * one of the Basic Data Attributes cannot be read then none of the values will be read and a
 	 * <code>ServiceError</code> will be thrown.
-	 * 
+	 *
 	 * @param modelNode
 	 *            the functionally constrained model node that is to be read.
 	 * @throws ServiceError
@@ -675,7 +730,7 @@ public final class ClientAssociation {
 	/**
 	 * Will update all data inside the model except for control variables (those that have FC=CO). Control variables are
 	 * not meant to be read. Update is done by calling getDataValues on the FCDOs below the Logical Nodes.
-	 * 
+	 *
 	 * @throws ServiceError
 	 *             if a ServiceError is returned by the server.
 	 * @throws IOException
@@ -733,7 +788,7 @@ public final class ClientAssociation {
 	 * Data Attributes of the given model node. Will simply return if all values have been successfully written. If one
 	 * of the Basic Data Attributes could not be written then a <code>ServiceError</code> will be thrown. In this case
 	 * it is not possible to say which of several Basic Data Attributes could not be written.
-	 * 
+	 *
 	 * @param modelNode
 	 *            the functionally constrained model node that is to be written.
 	 * @throws ServiceError
@@ -781,7 +836,7 @@ public final class ClientAssociation {
 	 * This function will get the definition of all persistent DataSets from the server and update the DataSets in the
 	 * ServerModel that were returned by the retrieveModel() function. It will delete DataSets that have been deleted
 	 * since the last update and add any new DataSets
-	 * 
+	 *
 	 * @throws ServiceError
 	 * @throws IOException
 	 */
@@ -978,7 +1033,7 @@ public final class ClientAssociation {
 	 * indicated in the returned list. The returned list will have the same size as the member list of the data set. For
 	 * each member it will contain <code>null</code> if reading was successful and a ServiceError if reading of this
 	 * member failed.
-	 * 
+	 *
 	 * @param dataSet
 	 *            the DataSet that is to be read.
 	 * @return a list indicating ServiceErrors that may have occurred.
@@ -1138,7 +1193,7 @@ public final class ClientAssociation {
 	 * Sets the selected values of the given Report Control Block. Note that all these parameters may only be set if
 	 * reporting for this report control block is not enabled and if it is not reserved by another client. The
 	 * parameters PurgeBuf, EntryId and ResvTms are only applicable if the given rcb is of type BRCB.
-	 * 
+	 *
 	 * @param rcb
 	 * @param setRptId
 	 * @param setDatSet
@@ -1270,7 +1325,7 @@ public final class ClientAssociation {
 	/**
 	 * See iec61850-8-1 Table 64 for the order of the report information To get the updated values, use the getDataSet
 	 * method for reports
-	 * 
+	 *
 	 * @param rpt
 	 * @return
 	 */
@@ -1400,7 +1455,7 @@ public final class ClientAssociation {
 	 * Performs the Select ACSI Service of the control model on the given controllable Data Object (DO). By selecting a
 	 * controllable DO you can reserve it for exclusive control/operation. This service is only applicable if the
 	 * ctlModel Data Attribute is set to "sbo-with-normal-security" (2).
-	 * 
+	 *
 	 * The selection is canceled in one of the following events:
 	 * <ul>
 	 * <li>The "Cancel" ACSI service is issued.</li>
@@ -1412,7 +1467,7 @@ public final class ClientAssociation {
 	 * <li>The sboClass is set to "operate-once" then the selection is also canceled after a successful operate service.
 	 * </li>
 	 * </ul>
-	 * 
+	 *
 	 * @param controlDataObject
 	 *            needs to be a controllable Data Object that contains a Data Attribute named "SBO".
 	 * @return false if the selection/reservation was not successful (because it is already selected by another client).
@@ -1455,9 +1510,9 @@ public final class ClientAssociation {
 	 * orCat is 0 ("not-supported") and the default value for orIdent is ""(the empty string).</li>
 	 * <li>Oper.Test (BdaBoolean) - if true this operate command is sent for test purposes only. Default is false.</li>
 	 * </ul>
-	 * 
+	 *
 	 * All other operate parameters are automatically handled by this function.
-	 * 
+	 *
 	 * @param controlDataObject
 	 *            needs to be a controllable Data Object that contains a Data Attribute named "Oper".
 	 * @throws ServiceError

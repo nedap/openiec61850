@@ -22,6 +22,7 @@ package org.openmuc.openiec61850;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.security.KeyStore;
 
 import javax.net.SocketFactory;
 
@@ -77,7 +78,7 @@ public final class ClientSap {
 	 * Sets the maximum MMS PDU size in bytes that the client association will support. The client proposes this value
 	 * to the server during association. If the server requires the use of a smaller maximum MMS PDU size, then the
 	 * smaller size will be accepted by the client. The default size is 65000.
-	 * 
+	 *
 	 * @param size
 	 *            cannot be less than 64. The upper limit is 65000 so that segmentation at the lower transport layer is
 	 *            avoided. The Transport Layer's maximum PDU size is 65531.
@@ -93,7 +94,7 @@ public final class ClientSap {
 
 	/**
 	 * Gets the maximum MMS PDU size.
-	 * 
+	 *
 	 * @return the maximum MMS PDU size.
 	 */
 	public int getMaxMmsPduSize() {
@@ -103,7 +104,7 @@ public final class ClientSap {
 	/**
 	 * Sets the SevicesSupportedCalling parameter. The given parameter is sent to the server but has no affect on the
 	 * functionality of this client.
-	 * 
+	 *
 	 * @param services
 	 *            the ServicesSupportedCalling parameter
 	 */
@@ -116,7 +117,7 @@ public final class ClientSap {
 
 	/**
 	 * Gets the ServicesSupportedCalling parameter.
-	 * 
+	 *
 	 * @return the ServicesSupportedCalling parameter.
 	 */
 	public byte[] getServicesSupportedCalling() {
@@ -126,7 +127,7 @@ public final class ClientSap {
 	/**
 	 * Sets the remote/called Transport-Selector (T-SEL). It is optionally transmitted in the OSI Transport Layer
 	 * connection request (CR). The default remote T-SEL is byte[] { 0, 1 }.
-	 * 
+	 *
 	 * @param tSelRemote
 	 *            the remote/called T-SEL. If null the T-SEL will be omitted. No maximum size is defined by the
 	 *            standard.
@@ -138,7 +139,7 @@ public final class ClientSap {
 	/**
 	 * Sets the local/calling Transport-Selector (T-SEL). It is optionally transmitted in the OSI Transport Layer
 	 * connection request (CR). The default local T-SEL byte[] { 0, 0 }.
-	 * 
+	 *
 	 * @param tSelLocal
 	 *            the local/calling T-SEL. If null the T-SEL will be omitted. No maximum size is defined by the
 	 *            standard.
@@ -149,7 +150,7 @@ public final class ClientSap {
 
 	/**
 	 * Sets the default response timeout of the <code>ClientAssociation</code> that is created using this ClientSap.
-	 * 
+	 *
 	 * @param timeout
 	 *            the response timeout in milliseconds. The default is 20000.
 	 */
@@ -161,7 +162,7 @@ public final class ClientSap {
 	 * Sets the message fragment timeout. This is the timeout that the socket timeout is set to after the first byte of
 	 * a message has been received. A request function (e.g. setDataValues()) will throw an IOException if the socket
 	 * throws this timeout because the association/connection cannot recover from this kind of error.
-	 * 
+	 *
 	 * @param timeout
 	 *            the timeout in milliseconds. The default is 10000.
 	 */
@@ -171,7 +172,7 @@ public final class ClientSap {
 
 	/**
 	 * Connects to the IEC 61850 MMS server at the given address and port and returns the resulting association object.
-	 * 
+	 *
 	 * @param address
 	 *            the address to connect to.
 	 * @param port
@@ -190,7 +191,7 @@ public final class ClientSap {
 
 	/**
 	 * Connects to the IEC 61850 MMS server at the given address and port and returns the resulting association object.
-	 * 
+	 *
 	 * @param address
 	 *            the address to connect to.
 	 * @param port
@@ -214,6 +215,57 @@ public final class ClientSap {
 
 		ClientAssociation clientAssociation = new ClientAssociation(address, port, localAddr, localPort,
 				authenticationParameter, acseSap, proposedMaxMmsPduSize, proposedMaxServOutstandingCalling,
+				proposedMaxServOutstandingCalled, proposedDataStructureNestingLevel, servicesSupportedCalling,
+				responseTimeout, messageFragmentTimeout);
+
+		return clientAssociation;
+	}
+
+    /**
+	 * Connects to the IEC 61850 MMS server at the given address and port and returns the resulting association object.
+	 *
+	 * @param address
+	 *            the address to connect to.
+	 * @param port
+	 *            the port to connect to. Usually the MMS port is 102.
+	 * @param authenticationParameter
+	 *            an optional authentication parameters that is transmitted. It will be omitted if equal to null.
+	 * @return the association object.
+	 * @throws IOException
+	 *             if any kind of error occurs trying build up the association.
+	 */
+	public ClientAssociation associate(InetAddress address, int port, KeyStore keyStore, String keystorePassword)
+			throws IOException {
+
+		return associate(address, port, keyStore, keystorePassword, null, -1);
+	}
+
+	/**
+	 * Connects to the IEC 61850 MMS server at the given address and port and returns the resulting association object.
+	 *
+	 * @param address
+	 *            the address to connect to.
+	 * @param port
+	 *            the port to connect to. Usually the MMS port is 102.
+	 * @param authenticationParameter
+	 *            an optional authentication parameters that is transmitted. It will be omitted if equal to null.
+	 * @return the association object.
+	 * @throws IOException
+	 *             if any kind of error occurs trying build up the association.
+	 */
+	public ClientAssociation associate(InetAddress address, int port, KeyStore keyStore, String keystorePassword,
+			InetAddress localAddr, int localPort) throws IOException {
+
+		if (port < 0 || port > 65535) {
+			throw new IllegalArgumentException("invalid port");
+		}
+
+		if (address == null) {
+			throw new IllegalArgumentException("address may not be null");
+		}
+
+		ClientAssociation clientAssociation = new ClientAssociation(address, port, localAddr, localPort,
+				keyStore, keystorePassword, acseSap, proposedMaxMmsPduSize, proposedMaxServOutstandingCalling,
 				proposedMaxServOutstandingCalled, proposedDataStructureNestingLevel, servicesSupportedCalling,
 				responseTimeout, messageFragmentTimeout);
 

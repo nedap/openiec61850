@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * protocol as defined by ISO 8650 or ITU X.217/X.227. The ACSE provides services for establishing and releasing
  * application-associations. The class also realizes the lower ISO Presentation Layer as defined by ISO 8823/ITU X226
  * and the ISO Session Layer as defined by 8327/ITU X.225.
- * 
+ *
  */
 public final class ServerAcseSap implements TConnectionListener {
 
@@ -51,7 +51,7 @@ public final class ServerAcseSap implements TConnectionListener {
 
 	/**
 	 * Use this constructor to create a server ACSE SAP that listens on a fixed port.
-	 * 
+	 *
 	 * @param associationListener
 	 *            the AssociationListener that will be notified when remote clients have associated. Once constructed
 	 *            the AcseSAP contains a public TSAP that can be accessed to set its configuration.
@@ -99,17 +99,17 @@ public final class ServerAcseSap implements TConnectionListener {
 
 	/**
 	 * This function is internal and should not be called by users of this class.
-	 * 
+	 *
 	 */
 	@Override
 	public void connectionIndication(TConnection tConnection) {
 		AcseAssociation acseAssociation = new AcseAssociation(tConnection, pSelLocal);
 
-		ByteBuffer asdu = ByteBuffer.allocate(1000);
+		ByteBuffer asdu = ByteBuffer.allocate(10000);//For AARQ signing, this will hold lots of data!
 		try {
 			acseAssociation.listenForCn(asdu);
 		} catch (IOException e) {
-			logger.warn("Server: Connection unsuccessful. IOException:" + e.getMessage());
+			logger.warn("Server: Connection unsuccessful. IOException:", e);
 			tConnection.close();
 			return;
 		} catch (TimeoutException e) {

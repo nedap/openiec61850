@@ -23,6 +23,8 @@ package org.openmuc.openiec61850.internal.acse;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.nio.ByteBuffer;
+import java.security.Key;
+import java.security.KeyStore;
 
 import javax.net.SocketFactory;
 
@@ -33,7 +35,7 @@ import org.openmuc.openiec61850.jositransport.ClientTSap;
  * defined by ISO 8650 or ITU X.217/X.227. The ACSE provides services for establishing and releasing
  * application-associations. The class also realizes the lower ISO Presentation Layer as defined by ISO 8823/ITU X226
  * and the ISO Session Layer as defined by 8327/ITU X.225.
- * 
+ *
  */
 public final class ClientAcseSap {
 
@@ -58,7 +60,7 @@ public final class ClientAcseSap {
 
 	/**
 	 * Associate to a remote ServerAcseSAP that is listening at the destination address.
-	 * 
+	 *
 	 * @param address
 	 *            remote InetAddress
 	 * @param port
@@ -72,6 +74,30 @@ public final class ClientAcseSap {
 		AcseAssociation acseAssociation = new AcseAssociation(null, pSelLocal);
 		try {
 			acseAssociation.startAssociation(apdu, address, port, localAddr, localPort, authenticationParameter,
+					pSelRemote, tSap);
+		} catch (IOException e) {
+			acseAssociation.disconnect();
+			throw e;
+		}
+		return acseAssociation;
+	}
+
+    /**
+	 * Associate to a remote ServerAcseSAP that is listening at the destination address.
+	 *
+	 * @param address
+	 *            remote InetAddress
+	 * @param port
+	 *            remote port
+	 * @return the association object
+	 * @throws IOException
+	 *             is thrown if association was unsuccessful.
+	 */
+	public AcseAssociation associate(InetAddress address, int port, InetAddress localAddr, int localPort,
+			KeyStore keystore, String keystorePassword, ByteBuffer apdu) throws IOException {
+		AcseAssociation acseAssociation = new AcseAssociation(null, pSelLocal);
+		try {
+			acseAssociation.startAssociation(apdu, address, port, localAddr, localPort, keystore, keystorePassword,
 					pSelRemote, tSap);
 		} catch (IOException e) {
 			acseAssociation.disconnect();

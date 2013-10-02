@@ -42,12 +42,19 @@ public class TlsServerSocketFactory extends SSLServerSocketFactory {
 
     private SSLServerSocketFactory defaultFactory;
 
+    private KeyStore keyStore;
+
     private KeyManagerFactory kmf;
     private TrustManagerFactory tmf;
 
 
     private SSLServerSocketFactory getOriginalDefault() {
         return defaultFactory;
+    }
+
+
+    public KeyStore getKeyStore() {
+        return keyStore;
     }
 
     /**
@@ -116,6 +123,7 @@ public class TlsServerSocketFactory extends SSLServerSocketFactory {
             }
 
             KeyStore key = KeyStore.getInstance(KeyStore.getDefaultType());
+            this.keyStore = key;
             key.load(inputStream, keyStorePassword.toCharArray());
             // Set up key manager factory to use our key store
             kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());

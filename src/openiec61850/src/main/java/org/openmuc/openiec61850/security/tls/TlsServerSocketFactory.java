@@ -15,7 +15,6 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
-import java.util.logging.Level;
 import javax.net.ssl.KeyManagerFactory;
 
 import javax.net.ssl.SSLContext;
@@ -221,7 +220,28 @@ public class TlsServerSocketFactory extends SSLServerSocketFactory {
 
     private void fixSocket(SSLServerSocket socket) {
 
-        socket.setSSLParameters(parameters);
+        //the next line is th easiest, but does not work in JDK 6
+        //socket.setSSLParameters(parameters);
+
+        //this effectively does the same thing
+        String[] s;
+        s = parameters.getCipherSuites();
+        if (s != null) {
+            socket.setEnabledCipherSuites(s);
+        }
+
+        s = parameters.getProtocols();
+        if (s != null) {
+            socket.setEnabledProtocols(s);
+        }
+
+        if (parameters.getNeedClientAuth()) {
+            socket.setNeedClientAuth(true);
+        } else if (parameters.getWantClientAuth()) {
+            socket.setWantClientAuth(true);
+        } else {
+            socket.setWantClientAuth(false);
+        }
 
         socket.setUseClientMode(false);//we're not a client!
     }

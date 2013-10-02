@@ -18,7 +18,6 @@ public class AllowedCiphers {
         "TLS_DH_DSS_WITH_AES_256_SHA", /** This is listed in the standard, BUT no one else uses this notation. Instead:*/
         "TLS_DH_DSS_WITH_AES_256_CBC_SHA256", //this one is used
         "TLS_RSA_WITH_AES_256_CBC_SHA",
-        "SSL_RSA_WITH_RC4_128_SHA",
         "TLS_RSA_WITH_AES_128_CBC_SHA", //mandatory according to TLS 1.2
         "TLS_ECDH_RSA_WITH_AES_128_CBC_SHA256",
         "TLS_ECDH_RSA_WITH_AES_256_CBC_SHA384",

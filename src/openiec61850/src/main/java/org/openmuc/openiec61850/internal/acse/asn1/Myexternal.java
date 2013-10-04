@@ -6,15 +6,11 @@ package org.openmuc.openiec61850.internal.acse.asn1;
 
 import java.io.IOException;
 import java.io.InputStream;
-
-import org.openmuc.jasn1.ber.BerByteArrayOutputStream;
-import org.openmuc.jasn1.ber.BerIdentifier;
-import org.openmuc.jasn1.ber.BerLength;
-import org.openmuc.jasn1.ber.types.BerAny;
-import org.openmuc.jasn1.ber.types.BerBitString;
-import org.openmuc.jasn1.ber.types.BerInteger;
-import org.openmuc.jasn1.ber.types.BerObjectIdentifier;
-import org.openmuc.jasn1.ber.types.BerOctetString;
+import java.util.List;
+import java.util.LinkedList;
+import org.openmuc.jasn1.ber.*;
+import org.openmuc.jasn1.ber.types.*;
+import org.openmuc.jasn1.ber.types.string.*;
 
 public final class Myexternal {
 
@@ -53,16 +49,14 @@ public final class Myexternal {
 
 			if (arbitrary != null) {
 				codeLength += arbitrary.encode(berOStream, false);
-				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 2))
-						.encode(berOStream);
+				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 2)).encode(berOStream);
 				return codeLength;
 
 			}
 
 			if (octet_aligned != null) {
 				codeLength += octet_aligned.encode(berOStream, false);
-				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 1))
-						.encode(berOStream);
+				codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 1)).encode(berOStream);
 				return codeLength;
 
 			}
@@ -80,17 +74,27 @@ public final class Myexternal {
 			throw new IOException("Error encoding BerChoice: No item in choice was selected.");
 		}
 
-		public int decode(InputStream iStream, BerIdentifier berIdentifier) throws IOException {
+        public int decode(InputStream iStream, BerIdentifier berIdentifier) throws IOException {
+            return decode(iStream, berIdentifier, false);
+        }
+
+		public int decode(InputStream iStream, BerIdentifier berIdentifier, boolean parseAny) throws IOException {
 			int codeLength = 0;
+			int choiceDecodeLength = 0;
 			BerIdentifier passedIdentifier = berIdentifier;
 			if (berIdentifier == null) {
 				berIdentifier = new BerIdentifier();
 				codeLength += berIdentifier.decode(iStream);
 			}
 			if (berIdentifier.equals(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 0)) {
-				BerLength tempLength = new BerLength();
-				codeLength += tempLength.decode(iStream);
-				codeLength += tempLength.val;
+                if(parseAny) {
+                    single_ASN1_type = new BerAny();
+                    codeLength += single_ASN1_type.decode(iStream, false);
+                } else {
+                    BerLength tempLength = new BerLength();
+                    codeLength += tempLength.decode(iStream);
+                    codeLength += tempLength.val;
+                }
 				return codeLength;
 			}
 
@@ -119,8 +123,7 @@ public final class Myexternal {
 		}
 	}
 
-	public final static BerIdentifier identifier = new BerIdentifier(BerIdentifier.UNIVERSAL_CLASS,
-			BerIdentifier.CONSTRUCTED, 8);
+	public final static BerIdentifier identifier = new BerIdentifier(BerIdentifier.UNIVERSAL_CLASS, BerIdentifier.CONSTRUCTED, 8);
 	protected BerIdentifier id;
 
 	public byte[] code = null;
@@ -179,7 +182,11 @@ public final class Myexternal {
 
 	}
 
-	public int decode(InputStream iStream, boolean explicit) throws IOException {
+    public int decode(InputStream iStream, boolean explicit) throws IOException {
+        return decode(iStream, explicit, false);
+    }
+
+	public int decode(InputStream iStream, boolean explicit, boolean parseAny) throws IOException {
 		int codeLength = 0;
 		int subCodeLength = 0;
 		int choiceDecodeLength = 0;
@@ -221,7 +228,7 @@ public final class Myexternal {
 				decodedIdentifier = true;
 			}
 			encoding = new SubChoice_encoding();
-			choiceDecodeLength = encoding.decode(iStream, berIdentifier);
+			choiceDecodeLength = encoding.decode(iStream, berIdentifier, parseAny);
 			if (choiceDecodeLength != 0) {
 				decodedIdentifier = false;
 				subCodeLength += choiceDecodeLength;
@@ -242,3 +249,4 @@ public final class Myexternal {
 		code = berOStream.getArray();
 	}
 }
+

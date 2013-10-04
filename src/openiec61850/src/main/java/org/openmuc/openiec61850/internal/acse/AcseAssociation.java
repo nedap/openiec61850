@@ -77,6 +77,7 @@ import org.openmuc.openiec61850.internal.presentation.asn1.Result_list;
 import org.openmuc.openiec61850.internal.presentation.asn1.User_data;
 import org.openmuc.openiec61850.jositransport.ClientTSap;
 import org.openmuc.openiec61850.jositransport.TConnection;
+import org.openmuc.openiec61850.security.tls.AcseVerifier;
 
 public final class AcseAssociation {
 
@@ -329,35 +330,17 @@ public final class AcseAssociation {
                 //TODO: check the sender ACSE requirements
                 sender_acse_requirements = new BerBitString(new byte[] { (byte) 0x02, (byte) 0x07, (byte) 0x80 });
                 mechanism_name = default_mechanism_name;//TODO! correct mechanism name
-                PrivateKeyEntry privateKeyEntry = null;
 
-                try{
-                     privateKeyEntry = getRSAPrivateKeyEntry(keystore, keystorePassword);
-                } catch (KeyStoreException ex) {
-                     throw new RuntimeException("error accessing keystore: ", ex);
-                }
+                MMS_TLS_Authentication_value authValue = AcseVerifier.sign(keystore, keystorePassword);
+                BerByteArrayOutputStream berOStream = new BerByteArrayOutputStream(200, true);
+                authValue.encode(berOStream, true);
 
-                if(privateKeyEntry == null) {
-                    throw new IllegalArgumentException("keystore contains no private RSA key to use, or no X509Certificate. We need both.");
-                }
+                Myexternal.SubChoice_encoding octetEncoding = new Myexternal.SubChoice_encoding(new BerAny(berOStream.getArray()), null, null);
 
-                Signature signature = Signature.getInstance("SHA1withRSA");
-                signature.initSign(privateKeyEntry.getPrivateKey());
+                Myexternal external = new Myexternal(directReference, indirectReference, octetEncoding);//no idea if directReference/indirectReference is ok
 
-                SimpleDateFormat generalizedTimeFormat = new SimpleDateFormat("yyyyMMddHHmmss.SSSZ");
-                byte[] generalizedTime = generalizedTimeFormat.format(new Date()).getBytes();
-                BerGeneralizedTime time = new BerGeneralizedTime(generalizedTime);
-                signature.update(generalizedTime);
-                BerOctetString berSignature = new BerOctetString(signature.sign());
-                BerOctetString certificate = new BerOctetString(privateKeyEntry.getCertificate().getEncoded());
-
-                MMS_TLS_Authentication_value.SubSeq_certificate_based certBased =
-                        new MMS_TLS_Authentication_value.SubSeq_certificate_based(certificate, time, berSignature);
-                MMS_TLS_Authentication_value authValue = new MMS_TLS_Authentication_value(certBased);
-                Myexternal.SubChoice_encoding octetEncoding = new Myexternal.SubChoice_encoding(authValue, null, null);
-
-                Myexternal external = new Myexternal(null, null, octetEncoding);
                 authentication_value = new Authentication_value(null, null, external);
+                //authentication_value = null;
             } catch (NoSuchAlgorithmException ex) {
                 throw new IllegalArgumentException("no PKCS#1 algorithm present in your JDK. Please add a security provider: " + ex.getMessage());
             } catch (InvalidKeyException ex) {
@@ -365,6 +348,8 @@ public final class AcseAssociation {
             } catch (SignatureException ex) {
                 throw new IllegalArgumentException("Problem signing : " +  ex.getMessage());
             } catch (CertificateEncodingException ex) {
+                throw new IllegalArgumentException("Problem encoding X.509 certificate : " +  ex.getMessage());
+            } catch (javax.security.cert.CertificateEncodingException ex) {
                 throw new IllegalArgumentException("Problem encoding X.509 certificate : " +  ex.getMessage());
             }
         } else if (authenticationParameter != null) {
@@ -563,6 +548,7 @@ public final class AcseAssociation {
 		try {
 			tConnection.receive(pduBuffer);
 		} catch (TimeoutException e) {
+            //try {Thread.sleep(1000 * 1000); } catch (Exception ex) {}
 			throw new IOException("ResponseTimeout waiting for connection response.", e);
 		}
 		idx = 0;

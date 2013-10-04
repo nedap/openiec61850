@@ -49,21 +49,21 @@ public final class Authentication_value {
 			return codeLength;
 
 		}
-		
+
 		if (bitstring != null) {
 			codeLength += bitstring.encode(berOStream, false);
 			codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 1)).encode(berOStream);
 			return codeLength;
 
 		}
-		
+
 		if (charstring != null) {
 			codeLength += charstring.encode(berOStream, false);
 			codeLength += (new BerIdentifier(BerIdentifier.CONTEXT_CLASS, BerIdentifier.PRIMITIVE, 0)).encode(berOStream);
 			return codeLength;
 
 		}
-		
+
 		throw new IOException("Error encoding BerChoice: No item in choice was selected.");
 	}
 
@@ -89,7 +89,7 @@ public final class Authentication_value {
 
 		if (berIdentifier.equals(BerIdentifier.CONTEXT_CLASS, BerIdentifier.CONSTRUCTED, 2)) {
 			external = new Myexternal();
-			codeLength += external.decode(iStream, false);
+			codeLength += external.decode(iStream, false, true);
 			return codeLength;
 		}
 

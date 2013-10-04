@@ -35,12 +35,23 @@ import org.openmuc.openiec61850.FcModelNode;
 import org.openmuc.openiec61850.ModelNode;
 
 import com.lambdaworks.crypto.SCryptUtil;
+import java.io.ByteArrayInputStream;
 import java.io.EOFException;
+import java.nio.ByteBuffer;
 import java.security.KeyStore;
+import java.text.SimpleDateFormat;
 import javax.net.ServerSocketFactory;
+import org.openmuc.jasn1.ber.BerIdentifier;
+import org.openmuc.jasn1.ber.BerLength;
+import org.openmuc.jasn1.ber.types.BerGeneralizedTime;
+import org.openmuc.openiec61850.internal.acse.AcseAssociation;
+import org.openmuc.openiec61850.internal.acse.asn1.Authentication_value;
+import org.openmuc.openiec61850.internal.acse.asn1.MMS_TLS_Authentication_value;
+import org.openmuc.openiec61850.security.tls.AcseVerifier;
 import org.openmuc.openiec61850.server.security.ScryptPasswordAuthenticator;
 import org.openmuc.openiec61850.security.tls.TlsServerSocketFactory;
 import org.openmuc.openiec61850.security.tls.TlsSocketFactory;
+import org.openmuc.openiec61850.server.security.Authenticator;
 
 /**
  *
@@ -64,6 +75,8 @@ public class AcseSigningTest {
     private static final int PORT_NUMBER = 56472;
 
     KeyStore clientKeystore;
+    KeyStore serverTrustStore;
+    KeyStore clientTrustStore;
 
     ServerSap serverSap;
     ClientSap clientSap;
@@ -83,6 +96,7 @@ public class AcseSigningTest {
         //construct with serversocketfactory
         serverSap = new ServerSap(PORT_NUMBER, 10, InetAddress.getLocalHost(), serverSap.getModelCopy(), "TestSap",
 			serverSocketFactory);
+        serverSap.setAuthenticator(new AcseSigningAuthenticator());
 
         serverSap.setPort(PORT_NUMBER);//todo: find a free port
         serverSap.setBindAddress(InetAddress.getLocalHost());
@@ -92,6 +106,10 @@ public class AcseSigningTest {
 
         clientKeystore = KeyStore.getInstance(KeyStore.getDefaultType());
         clientKeystore.load(getClass().getResourceAsStream("/" + CLIENT_KEYSTORE), CLIENT_KEYSTOREPASSWORD.toCharArray());
+        serverTrustStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        serverTrustStore.load(getClass().getResourceAsStream("/" + SERVER_TRUSTSTORE), CLIENT_TRUSTSTOREPASSWORD.toCharArray());
+        clientTrustStore = KeyStore.getInstance(KeyStore.getDefaultType());
+        clientTrustStore.load(getClass().getResourceAsStream("/" + CLIENT_TRUSTSTORE), CLIENT_TRUSTSTOREPASSWORD.toCharArray());
         clientSap = new ClientSap(socketFactory);
 
         writtenAttributes = new ArrayList<BasicDataAttribute>();
@@ -105,42 +123,48 @@ public class AcseSigningTest {
         }
     }
 
+    private Authentication_value authValue;
+
     @Test
-    public void testClientServerGetModel() throws Exception {
+    public void testVerifySignature() throws Exception {
         associateClient();
+        assertNotNull(authValue);
+        byte[] content = authValue.external.encoding.single_ASN1_type.getContent();
+        MMS_TLS_Authentication_value signedValue = new MMS_TLS_Authentication_value();
+        ByteArrayInputStream stream = new ByteArrayInputStream(content);
+        BerIdentifier id = new BerIdentifier();
+        id.decode(stream);
+        new BerLength().decode(stream);
 
-        Date now = new Date();
-        {
-            ServerModel serverModelFromServer = serverSap.getModelCopy();
+        signedValue.decode(stream, null);
+        BerGeneralizedTime time = signedValue.certificate_based.time;
+        String timeString = new String(time.octetString);
+        SimpleDateFormat generalizedTimeFormat = new SimpleDateFormat("yyyyMMddHHmmss.SSSZ");
+        Date now = generalizedTimeFormat.parse(timeString);
+//        assertTrue(System.currentTimeMillis() - now.getTime() < 1000);
+        assertTrue(AcseVerifier.verify(serverTrustStore, signedValue));
 
-            BdaFloat32 totWMag = (BdaFloat32) serverModelFromServer.findModelNode("ied1lDevice1/MMXU1.TotW.mag.f", Fc.MX);
-            BdaQuality q = (BdaQuality) serverModelFromServer.findModelNode("ied1lDevice1/MMXU1.TotW.q", Fc.MX);
-            BdaTimestamp t = (BdaTimestamp) serverModelFromServer.findModelNode("ied1lDevice1/MMXU1.TotW.t", Fc.MX);
-            totWMag.setFloat(10.5f);
-            q.setTest(true);
+    }
 
-            t.setDate(now);
+    @Test
+    public void testNotInTrustStore() throws Exception {
+        associateClient();
+        assertNotNull(authValue);
+        byte[] content = authValue.external.encoding.single_ASN1_type.getContent();
+        MMS_TLS_Authentication_value signedValue = new MMS_TLS_Authentication_value();
+        ByteArrayInputStream stream = new ByteArrayInputStream(content);
+        BerIdentifier id = new BerIdentifier();
+        id.decode(stream);
+        new BerLength().decode(stream);
 
-            List<BasicDataAttribute> totWBdas = new ArrayList<BasicDataAttribute>(3);
-            totWBdas.add(totWMag);
-            totWBdas.add(q);
-            totWBdas.add(t);
+        signedValue.decode(stream, null);
+        BerGeneralizedTime time = signedValue.certificate_based.time;
+        String timeString = new String(time.octetString);
+        SimpleDateFormat generalizedTimeFormat = new SimpleDateFormat("yyyyMMddHHmmss.SSSZ");
+        Date now = generalizedTimeFormat.parse(timeString);
+        assertTrue(System.currentTimeMillis() - now.getTime() < 1000);
+        assertFalse(AcseVerifier.verify(clientTrustStore, signedValue));
 
-            serverSap.setValues(totWBdas);
-        }
-
-
-        {
-            ServerModel serverModelFromClient = clientAssociation.retrieveModel();
-            clientAssociation.getAllDataValues();
-
-            BdaFloat32 totWMag = (BdaFloat32) serverModelFromClient.findModelNode("ied1lDevice1/MMXU1.TotW.mag.f", Fc.MX);
-            BdaQuality q = (BdaQuality) serverModelFromClient.findModelNode("ied1lDevice1/MMXU1.TotW.q", Fc.MX);
-            BdaTimestamp t = (BdaTimestamp) serverModelFromClient.findModelNode("ied1lDevice1/MMXU1.TotW.t", Fc.MX);
-            assertEquals(10.5f, totWMag.getFloat().floatValue(), 0.05f);
-            assertEquals(true, q.isTest());
-            assertEquals(now, t.getDate());
-        }
     }
 
  /*   @Test
@@ -161,6 +185,17 @@ public class AcseSigningTest {
 */
     private void associateClient() throws Exception {
         clientAssociation = clientSap.associate(InetAddress.getLocalHost(), PORT_NUMBER, clientKeystore, this.CLIENT_KEYSTOREPASSWORD);
+    }
+
+    class AcseSigningAuthenticator implements Authenticator {
+
+        @Override
+        public boolean acceptConnection(AcseAssociation acseAssociation, ByteBuffer psdu) {
+            //store the authentication value to test later
+            authValue = acseAssociation.getAarq().calling_authentication_value;
+            return true;
+        }
+
     }
 
     class TlsTestStopListener implements ServerStopListener {

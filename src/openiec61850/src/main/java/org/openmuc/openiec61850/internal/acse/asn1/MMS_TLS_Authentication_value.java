@@ -12,7 +12,7 @@ import org.openmuc.jasn1.ber.*;
 import org.openmuc.jasn1.ber.types.*;
 import org.openmuc.jasn1.ber.types.string.*;
 
-public final class MMS_TLS_Authentication_value extends BerAny {
+public final class MMS_TLS_Authentication_value {
 
 	public byte[] code = null;
 	public final static class SubSeq_certificate_based {
@@ -150,16 +150,16 @@ public final class MMS_TLS_Authentication_value extends BerAny {
 	public SubSeq_certificate_based certificate_based = null;
 
 	public MMS_TLS_Authentication_value() {
-        super(0);//BerAny requires a length, but this is never used. TODO: get rid of length?
+        super();//BerAny requires a length, but this is never used. TODO: get rid of length?
 	}
 
 	public MMS_TLS_Authentication_value(byte[] code) {
-        super(0);//BerAny requires a length, but this is never used. TODO: get rid of length?
+        super();//BerAny requires a length, but this is never used. TODO: get rid of length?
 		this.code = code;
 	}
 
 	public MMS_TLS_Authentication_value(SubSeq_certificate_based certificate_based) {
-        super(0);//BerAny requires a length, but this is never used. TODO: get rid of length?
+        super();//BerAny requires a length, but this is never used. TODO: get rid of length?
 		this.certificate_based = certificate_based;
 	}
 
